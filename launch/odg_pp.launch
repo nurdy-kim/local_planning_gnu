@@ -1,0 +1,12 @@
+<launch>
+
+    <include file="$(find f1tenth_gym_ros)/launch/gym_bridge_host.launch" />
+
+    <node name="Carminator" pkg="car_duri" type="odg_pf_pp.py" output="screen">
+        <remap from="/ICE/drive" to="/drive" />
+        <remap from="/ICE/odom" to="/odom" />
+        <remap from="/ICE/scan" to="/scan" />
+
+    </node>
+
+</launch>
