@@ -16,17 +16,15 @@ from ackermann_msgs.msg import AckermannDriveStamped
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker, MarkerArray
 
-class maindrive:
-    def __init__(self, global_q, local_q, obstacle_q):
-        #self.local_q= local_q
-        self.local_q = local_q
-        self.global_q = global_q
-        self.obstacle_q = obstacle_q
+class maindrive(threading.Thread):
+    def __init__(self, main_q):
+        super(maindrive, self).__init__()
+        self.main_q = main_q
         self.RATE = 100
         self.ackermann_data = AckermannDriveStamped()
         self.drive_pub = rospy.Publisher("/ICE/drive", AckermannDriveStamped, queue_size=10)
 
-    def maindrives(self):
+    def run(self):
         obstacle=False 
         rate = rospy.Rate(self.RATE)
 
@@ -34,29 +32,16 @@ class maindrive:
         s2=[0]*100
         s=np.arange(100)
 
-
         while not rospy.is_shutdown():
             #if self.scan_range == 0: continue
-            obstacle = self.obstacle_q.get()
-            if obstacle:     #local
-                #print("Local")
-                ackermann = self.local_q.get()
-                self.ackermann_data.drive.steering_angle = ackermann[1]
-                self.ackermann_data.drive.speed = ackermann[0]
-                #print("local", ackermann[2])
-                a=0
-            else:           #global
-                #print("Global")
-                ackermann = self.global_q.get()
-                self.ackermann_data.drive.steering_angle = ackermann[1]
-                self.ackermann_data.drive.speed = ackermann[0]
-                #print("global", ackermann[2])
-                a=1
+            ackermann = self.main_q.get()
+            self.ackermann_data.drive.steering_angle = ackermann[1]
+            self.ackermann_data.drive.speed = ackermann[0]
             self.drive_pub.publish(self.ackermann_data)
 
-            s1.pop(0)
+            #s1.pop(0)
             #s2.pop(0)
-            s1.append(ackermann[2])
+           # s1.append(ackermann[2])
             #s2.append(a)
             #plt.subplot(1,2,1)
             #plt.plot(s,s1,linewidth=3.0)
@@ -70,11 +55,11 @@ class maindrive:
             rate.sleep()
 
 class global_pure(threading.Thread):
-    def __init__(self, global_od_q, global_main_q):
+    def __init__(self, global_od_q, main_q):
         super(global_pure, self).__init__()
         #multiprocessing.Process.__init__(self)
         self.global_od_q = global_od_q
-        self.global_main_q = global_main_q
+        self.main_q = main_q
 
         self.PI = 3.141592
         self.CURRENT_WP_CHECK_OFFSET = 2
@@ -118,6 +103,7 @@ class global_pure(threading.Thread):
         self.speed_past = 0.0
 
         self.scan_filtered = [0]*1080
+        self.manualSpeedArray=[]
         
 
         self.idx_save = 0
@@ -131,12 +117,14 @@ class global_pure(threading.Thread):
         rate = rospy.Rate(self.RATE)
         while not rospy.is_shutdown():
             sensor_data = self.global_od_q.get()
+            print(len(sensor_data[1][2]))
             self.current_position = [sensor_data[0][0], sensor_data[0][1], sensor_data[0][2]]
             self.current_speed = sensor_data[0][3]
             
             self.interver = sensor_data[1][0]
             self.scan_range = sensor_data[1][1]
             self.scan_filtered = sensor_data[1][2]
+            print(self.scan_filtered)
 
             self.find_nearest_wp()
             self.get_dx()
@@ -153,9 +141,9 @@ class global_pure(threading.Thread):
 
             ackermann = [speed, steer, self.idx_save]
             #print(self.scan_filtered)
-            if self.global_q.full():
-                self.global_q.get()
-            self.global_q.put(ackermann)
+            if self.main_q.full():
+                self.main_q.get()
+            self.main_q.put(ackermann)
 
             rate.sleep()
 
@@ -307,24 +295,6 @@ class global_pure(threading.Thread):
 
     #         self.goal_path_radius = self.actual_lookahead/(2*np.sin(self.PI/4 - controlled_slope/2))
 
-    def setSpeed(self):
-        controlled_speed_max = self.SPEED_MAX
-        controlled_speed_min = self.SPEED_MIN
-        for i in range(0,self.MSC_MUXSIZE):
-            if(self.wp_index_current > self.manualSpeedArray[i][0]) and (self.wp_index_current < self.manualSpeedArray[i][1]):
-                controlled_speed_max = self.manualSpeedArray[i][2]
-                controlled_speed_min = self.manualSpeedArray[i][3]
-                break
-        _speed = np.exp(-(self.DX_GAIN*np.fabs(self.dx)-np.log(controlled_speed_max - controlled_speed_min))) + controlled_speed_min
-        return _speed
-
-    def setSpeed_PossibleMaximumTest(self):
-        test_speed = np.sqrt(self.MU*self.GRAVITY_ACCELERATION*self.goal_path_radius)
-        if test_speed > 6:
-            return self.setSpeed()
-        else:
-            return test_speed
-
     def speed_controller(self):
         current_distance = np.fabs(np.average(self.scan_filtered[499:580]))
         if np.isnan(current_distance):
@@ -338,7 +308,7 @@ class global_pure(threading.Thread):
 
         if maximum_speed >= self.SPEED_MAX:
             maximum_speed = self.SPEED_MAX
-        
+        print(self.current_speed)
         if self.current_speed <= maximum_speed:
             # ACC
             if self.current_speed >= 10:
@@ -396,11 +366,12 @@ class global_pure(threading.Thread):
         #     self.global_q.put(ackermann)
 
 class local_fgm(threading.Thread):
-    def __init__(self, local_q):
+    def __init__(self, local_od_q, main_q):
         super(local_fgm, self).__init__()
         #multiprocessing.Process.__init__(self)
-        self.local_q = local_q
-       
+        self.local_od_q = local_od_q
+        self.main_q = main_q
+
         self.rep_count = 0
         self.ackermann_data = AckermannDriveStamped()
         self.PI = 3.141592
@@ -468,6 +439,7 @@ class local_fgm(threading.Thread):
         rate = rospy.Rate(self.RATE)
         while not rospy.is_shutdown():
             if self.scan_range == 0: continue
+            self.local_od_q.get()
          
             obstacles = self.define_obstacles(self.scan_filtered)
             #print(len(obstacles))
@@ -750,9 +722,9 @@ class local_fgm(threading.Thread):
         self.set_speed = self.speed_controller() # determin_speed
 
         ackermann=[self.set_speed, steering_angle, self.idx_save]
-        if self.local_q.full():
-                self.local_q.get()
-        self.local_q.put(ackermann)
+        if self.main_q.full():
+                self.main_q.get()
+        self.main_q.put(ackermann)
 
         self.current_position_past = self.current_position[2]
         self.steering_angle_past = steering_angle
@@ -916,7 +888,7 @@ class Obstacle_detect(threading.Thread):
         self.scan_range = 0
         self.front_idx = 0
 
-        self.scan_origin = []
+        self.scan_origin = [0]*1080
         self.gaps   = []
         self.scan_obs=[]
         self.dect_obs =[]
@@ -936,6 +908,7 @@ class Obstacle_detect(threading.Thread):
         rospy.Subscriber('/ICE/odom', Odometry, self.Odome, queue_size = 10)
     
     def Odome(self, odom_msg):
+        # print("11")
         qx = odom_msg.pose.pose.orientation.x 
         qy = odom_msg.pose.pose.orientation.y 
         qz = odom_msg.pose.pose.orientation.z
@@ -953,6 +926,7 @@ class Obstacle_detect(threading.Thread):
         self.current_speed = _speed
         self.set_steering = _steer
         self.current_position = [current_position_x,current_position_y, current_position_theta, self.current_speed, self.set_steering]
+        # print(self.current_position)
 
     def subCallback_od(self, msg_sub):
         self.interval = msg_sub.angle_increment
@@ -979,7 +953,7 @@ class Obstacle_detect(threading.Thread):
                             cont += 1
                             sum += self.scan_origin[i+j]
                 self.scan_origin[i] = sum/cont
-        self.lidar = [self.interval, self.scan_range, self.scan_origin]
+        self.lidar_data = [self.interval, self.scan_range, self.scan_origin]
 
     def obs_dect(self):
         #for i in range(1, self.scan_range - 1):
@@ -1044,34 +1018,36 @@ class Obstacle_detect(threading.Thread):
                 self.obs= True
                 break
                 
-    def decision(self):
+    def run(self):
         rate = rospy.Rate(self.RATE)
         while not rospy.is_shutdown():
             if self.scan_range == 0: continue
             self.obs_dect()
             sensor_data = [self.current_position, self.lidar_data]
+            print(self.scan_origin)
             if self.obs:
-                self.global_od_q.put(sensor_data)
-            else:
+                print("local")
                 self.local_od_q.put(sensor_data)
+            else:
+                print("global")
+                self.global_od_q.put(sensor_data)
             rate.sleep()
 
 if __name__ == '__main__':
     rospy.init_node("test")
     global_od_q = Queue(1)
     local_od_q = Queue(1)
-    global_main_q = Queue(1)
-    local_main_q = Queue(1)
+    main_q = Queue(1)
 
-    global_t = global_pure(global_od_q, global_main_q) 
-    local_t = local_fgm(local_od_q, local_main_q)
-    maindrive_t = maindrive(global_main_q, local_main_q)
+    global_t = global_pure(global_od_q, main_q) 
+    local_t = local_fgm(local_od_q, main_q)
+    maindrive_t = maindrive(main_q)
+    obstacle_t = Obstacle_detect(global_od_q, local_od_q)
 
     global_t.start()
     local_t.start()
     maindrive_t.start()
+    obstacle_t.start()
 
-    A = Obstacle_detect(global_od_q, local_od_q)
-    A.decision()
     rospy.spin()
 

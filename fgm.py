@@ -8,7 +8,7 @@ import time
 from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
 from nav_msgs.msg import Odometry
-from visualization_msgs.msg import Marker, MarkerArray
+from visualization_msgs.msg import Marker
 
 class FGM:
     def __init__(self):
@@ -17,11 +17,11 @@ class FGM:
 
         self.PI = 3.141592
         self.LOOK = 2.5
-        self.RACECAR_LENGTH = 0.3302
-        self.SPEED_MAX = rospy.get_param('max_speed',7.0)
+        self.RACECAR_LENGTH = 0.325
+        self.SPEED_MAX = rospy.get_param('max_speed',20.0)
         self.SPEED_MIN = rospy.get_param('min_speed', 1.5)
         self.RATE = rospy.get_param('rate', 100)
-        self.ROBOT_SCALE = rospy.get_param('robot_scale', 0.25)
+        self.ROBOT_SCALE = rospy.get_param('robot_scale', 0.35)
         self.THRESHOLD = rospy.get_param('threshold', 3.0)
         self.GAP_SIZE = rospy.get_param('gap_size', 1)
         self.FILTER_SCALE = rospy.get_param('filter_scale', 1.1) 
@@ -60,6 +60,12 @@ class FGM:
         self.front_idx = 0
         self.theta_for = self.PI/3
         self.gap_cont = 0
+        
+        self.current_speed = 5.0
+        self.MU = 0.523
+        self.GRAVITY_ACC = 9.81
+        self.ROBOT_LENGTH = 0.3302
+        self.dmin_past = 0
 
         rospy.Subscriber('/ICE/scan', LaserScan, self.subCallback_scan, queue_size = 10)
         rospy.Subscriber('/ICE/odom', Odometry, self.Odome, queue_size = 10)
@@ -69,8 +75,6 @@ class FGM:
         self.lap_time_flag = True
         self.lap_time_start = 0
         self.lap_time = 0
-        self.current_speed = 1.0
-        self.dmin_past = 0
 
     def getDistance(self, a, b):
         dx = a[0] - b[0]
@@ -105,8 +109,8 @@ class FGM:
         return rtpoint
 
     def get_waypoint(self):
-        file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
-        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas_test.csv',delimiter=',',dtype='float')
+        file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas_test.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('/catkin_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
         temp_waypoint = []
         for i in file_wps:
             wps_point = [i[0],i[1],0]
@@ -184,14 +188,15 @@ class FGM:
         current_position_x = odom_msg.pose.pose.position.x
         current_position_y = odom_msg.pose.pose.position.y
         self.current_position = [current_position_x,current_position_y, current_position_theta]
-
-        self.find_desired_wp()
+        
         self.current_speed = odom_msg.twist.twist.linear.x
 
         if self.current_speed > 1.0 and self.lap_time_flag:
             self.lap_time_flag = False
             self.lap_time_start = time.time()
         
+        self.find_desired_wp()
+
     def subCallback_scan(self,msg_sub):
         self.scan_angle_min = msg_sub.angle_min
         self.scan_angle_max = msg_sub.angle_max
@@ -345,6 +350,32 @@ class FGM:
             #가장 작은 distance를 갖는 gap만 return
             return self.gaps[gap_idx]
 
+    def speed_controller(self):
+        current_distance = np.fabs(np.average(self.scan_filtered[499:580]))
+        if np.isnan(current_distance):
+            print("SCAN ERR")
+            current_distance = 1.0
+        
+        if self.current_speed > 10:
+            current_distance -= self.current_speed * 0.7
+        
+        maximum_speed = np.sqrt(2*self.MU * self.GRAVITY_ACC * current_distance) - 2
+
+        if maximum_speed >= self.SPEED_MAX:
+            maximum_speed = self.SPEED_MAX
+        
+        if self.current_speed <= maximum_speed:
+            # ACC
+            if self.current_speed >= 10:
+                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed))
+            else:
+                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * self.ROBOT_LENGTH)
+        else:
+            # set_speed = 0
+            set_speed = self.current_speed - np.fabs((maximum_speed - self.current_speed) * 0.2)
+        # print("speed :", set_speed, "current", maximum_speed)
+        return set_speed
+
     def main_drive(self, goal):
         self.max_angle = (goal[2] - self.front_idx)*self.interval
         self.wp_angle = self.desired_wp_rt[1]
@@ -388,15 +419,15 @@ class FGM:
         #
         steering_angle = np.arctan(self.RACECAR_LENGTH/path_radius)
 
-        if (np.fabs(steering_angle) > self.PI/8):
-            speed = self.SPEED_MIN
-        else:
-            speed = (float)(-(3/self.PI)*(self.SPEED_MAX-self.SPEED_MIN)*np.fabs(self.max_angle)+self.SPEED_MAX)
-            speed = np.fabs(speed)
+        # if (np.fabs(steering_angle) > self.PI/8):
+        #     speed = self.SPEED_MIN
+        # else:
+        #     speed = (float)(-(3/self.PI)*(self.SPEED_MAX-self.SPEED_MIN)*np.fabs(self.max_angle)+self.SPEED_MAX)
+        #     speed = np.fabs(speed)
 
         self.ackermann_data.drive.steering_angle = steering_angle
         self.ackermann_data.drive.steering_angle_velocity = 0
-        self.ackermann_data.drive.speed = speed
+        self.ackermann_data.drive.speed = self.speed_controller()
         self.ackermann_data.drive.acceleration = 0
         self.ackermann_data.drive.jerk = 0
 
@@ -404,7 +435,6 @@ class FGM:
         self.speed_gain = 0
         self.steering_gain = 0
         self.gain_cont = 0
-
         self.dmin_past = dmin
 
     def driving(self):
