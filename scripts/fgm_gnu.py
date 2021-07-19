@@ -112,7 +112,7 @@ class FGM:
         return rtpoint
 
     def get_waypoint(self):
-        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.wpt_delimiter ,dtype='float')
+        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter ,dtype='float')
         # file_wps = np.genfromtxt('/catkin_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
         temp_waypoint = []
         for i in file_wps:

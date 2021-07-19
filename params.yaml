@@ -1,4 +1,4 @@
-wpt_path: "/home/nvidia/f1tenth_ws/src/local_planning_gnu/map/floor_8020.csv"
+wpt_path: "/home/nvidia/f1tenth_ws/src/car_duri/map/floor_8020.csv"
 wpt_delimeter: ","
 
 max_speed: 20.0

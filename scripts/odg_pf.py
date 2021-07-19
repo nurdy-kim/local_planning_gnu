@@ -123,7 +123,7 @@ class ODGPF:
         return rtpoint
 
     def get_waypoint(self):
-        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.wpt_delimiter ,dtype='float')
+        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter ,dtype='float')
         # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/vegas_paper.csv',delimiter=',',dtype='float')
         # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
         temp_waypoint = []
