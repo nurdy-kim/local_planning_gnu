@@ -1,0 +1,6 @@
+wpt_path: ""
+wpt_delimeter: ","
+
+max_speed: 20.0
+min_speed: 01.5
+

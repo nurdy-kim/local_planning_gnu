@@ -30,6 +30,9 @@ class ODGPF:
         self.FILTER_SCALE = 1.1
         self.scan_range = 0
         self.desired_wp_rt = [0,0]
+
+	self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
+	self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
         
         self.front_idx = 539
         self.detect_range_s = 359
@@ -120,7 +123,7 @@ class ODGPF:
         return rtpoint
 
     def get_waypoint(self):
-        file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas_test.csv',delimiter=',',dtype='float')
+        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.wpt_delimiter ,dtype='float')
         # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/vegas_paper.csv',delimiter=',',dtype='float')
         # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
         temp_waypoint = []
