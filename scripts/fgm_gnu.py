@@ -28,8 +28,8 @@ class FGM:
         self.GAP_THETA_GAIN = rospy.get_param('gap_theta_gain', 20.0)
         self.REF_THETA_GAIN = rospy.get_param('ref_theta_gain', 1.5)
 
-	self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
-	self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
+        self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
+        self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
         
         self.ackermann_data.drive.acceleration = 0
         self.ackermann_data.drive.jerk = 0

@@ -98,8 +98,8 @@ class global_pure(threading.Thread):
         #self.RATE = rospy.get_param("/pure_pursuit/driving/rate")
         self.RATE = rospy.get_param('rate', 100)
 
-	self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
-	self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
+        self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
+        self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
     
         self.waypoints = self.get_waypoint()
         self.wp_index_current = 0

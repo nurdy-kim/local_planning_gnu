@@ -85,8 +85,8 @@ class global_pure(threading.Thread):
         self.FILTER_SCALE = 10000
         self.MASS = 3.47
 
-	self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
-	self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
+        self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
+        self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
 
         #self.LOOKAHEAD_MAX = rospy.get_param("/pure_pursuit/driving/max_look_ahead")
         self.LOOKAHEAD_MAX = rospy.get_param('max_look_ahead', 1.9)

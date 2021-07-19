@@ -31,8 +31,8 @@ class ODGPF:
         self.scan_range = 0
         self.desired_wp_rt = [0,0]
 
-	self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
-	self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
+        self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
+        self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
         
         self.front_idx = 539
         self.detect_range_s = 359
