@@ -1,12 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# import multiprocessing
-# import queue
+import multiprocessing
+import queue
 import rospy
 import numpy as np
 import threading
 import matplotlib.pyplot as plt
-# from queue import Queue
+from queue import Queue
 # import Queue
 import math
 import time
@@ -23,7 +23,7 @@ class maindrive:
         self.local_q = local_q
         self.global_q = global_q
         self.obstacle_q = obstacle_q
-        self.RATE = 100
+        self.RATE = rospy.get_param('rate', 100)
         self.ackermann_data = AckermannDriveStamped()
         self.drive_pub = rospy.Publisher("/ICE/drive", AckermannDriveStamped, queue_size=10)
 
@@ -77,32 +77,24 @@ class global_pure(threading.Thread):
         self.global_od_q = global_od_q
         self.global_main_q = global_main_q
 
-        self.PI = 3.141592
+        self.PI = rospy.get_param('pi', 3.141592)
+        self.RACECAR_LENGTH = rospy.get_param('robot_length', 0.325)
+        self.ROBOT_SCALE = rospy.get_param('robot_scale', 0.25)
+        self.GRAVITY_ACCELERATION = rospy.get_param('g', 9.81)
+        self.MASS = rospy.get_param('mass', 3.47)
         self.CURRENT_WP_CHECK_OFFSET = 2
         self.DX_GAIN = 2.5
-        self.RACECAR_LENGTH = 0.3302
-        self.ROBOT_SCALE = 0.25
-        self.GRAVITY_ACCELERATION = 9.81
         self.FILTER_SCALE = 10000
-        self.MASS = 3.47
 
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
 
-        #self.LOOKAHEAD_MAX = rospy.get_param("/pure_pursuit/driving/max_look_ahead")
         self.LOOKAHEAD_MAX = rospy.get_param('max_look_ahead', 1.9)
-        #self.LOOKAHEAD_MIN = rospy.get_param("/pure_pursuit/driving/min_look_ahead")
         self.LOOKAHEAD_MIN = rospy.get_param('min_look_ahead', 0.9)
-        #self.SPEED_MAX = rospy.get_param("/pure_pursuit/driving/max_speed")
         self.SPEED_MAX = rospy.get_param('max_speed', 20.0)
-        #self.SPEED_MIN = rospy.get_param("/pure_pursuit/driving/min_speed")
         self.SPEED_MIN = rospy.get_param('min_speed', 1.5)
-        #self.DP_ANGLE_PROPORTION = rospy.get_param("/pure_pursuit/tuning/DP_angle_proportion")
-        #self.MSC_MUXSIZE = rospy.get_param("/pure_pursuit/driving/manual_speed_control/mux_size")
         self.MSC_MUXSIZE = rospy.get_param('mux_size', 0)
-        #self.MU = rospy.get_param("/pure_pursuit/driving/mu")
         self.MU = rospy.get_param('mu', 0.523)
-        #self.RATE = rospy.get_param("/pure_pursuit/driving/rate")
         self.RATE = rospy.get_param('rate', 100)
     
         self.waypoints = self.get_waypoint()
@@ -407,20 +399,23 @@ class local_fgm(threading.Thread):
        
         self.rep_count = 0
         self.ackermann_data = AckermannDriveStamped()
-        self.PI = 3.141592
-        self.MU = 0.523   #1.0
-        self.MASS = 3.47
-        self.GRAVITY_ACC = 9.81
+        self.PI = rospy.get_param('pi', 3.141592)
+        self.MU = rospy.get_param('mu', 0.523)   #1.0
+        self.MASS = rospy.get_param('mass', 3.47)
+        self.GRAVITY_ACC = rospy.get_param('g', 9.81)
+        self.SPEED_MAX = rospy.get_param('max_speed', 7.0)
+        self.SPEED_MIN = rospy.get_param('min_speed', 1.5)
+        self.RATE = rospy.get_param('rate', 100)
+        self.ROBOT_SCALE = rospy.get_param('robot_scale', 0.25)
+        self.ROBOT_LENGTH = rospy.get_param('robot_length', 0.325)
         self.LOOK = 5
-        self.SPEED_MAX = 20.0
-        self.SPEED_MIN = 4.0
-        self.RATE = 100
-        self.ROBOT_SCALE = 0.25
-        self.ROBOT_LENGTH = 0.325
         self.THRESHOLD = 2.0
         self.FILTER_SCALE = 1.1
         self.scan_range = 0
         self.desired_wp_rt = [0,0]
+
+        self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
+        self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
         
         self.front_idx = 539
         self.detect_range_s = 359
@@ -485,8 +480,7 @@ class local_fgm(threading.Thread):
             rate.sleep()
 
     def get_waypoint(self):
-    #file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
-        file_wps = np.genfromtxt('/home/lab/f1tenth_ws/src/car_duri/wp_vegas.csv', delimiter=',', dtype='float')
+        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter ,dtype='float')
         temp_waypoint = []
         for i in file_wps:
             wps_point = [i[0],i[1],0]
@@ -927,8 +921,8 @@ class Obstacle_detect(threading.Thread):
         self.len_obs = []
         self.obs= False
     
-        self.PI = 3.141592
-        self.RATE = 100
+        self.PI = rospy.get_param('pi', 3.141592)
+        self.RATE = rospy.get_param('rate', 100)
 
         self.current_position = [0]*5
         self.lidar_data = [0]*3

@@ -15,9 +15,8 @@ class FGM:
         
         self.ackermann_data = AckermannDriveStamped()
 
-        self.PI = 3.141592
         self.LOOK = 2.5
-        self.RACECAR_LENGTH = 0.3302
+        self.RACECAR_LENGTH = rospy.get_param('robot_length', 0.325)
         self.SPEED_MAX = rospy.get_param('max_speed',7.0)
         self.SPEED_MIN = rospy.get_param('min_speed', 1.5)
         self.RATE = rospy.get_param('rate', 100)
@@ -27,6 +26,7 @@ class FGM:
         self.FILTER_SCALE = rospy.get_param('filter_scale', 1.1) 
         self.GAP_THETA_GAIN = rospy.get_param('gap_theta_gain', 20.0)
         self.REF_THETA_GAIN = rospy.get_param('ref_theta_gain', 1.5)
+        self.PI = rospy.get_param('pi', 3.141592)
 
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')

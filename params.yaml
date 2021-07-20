@@ -3,4 +3,12 @@ wpt_delimeter: ","
 
 max_speed: 20.0
 min_speed: 01.5
+rate: 100
 
+robot_length: 0.325
+robot_scale: 0.25
+mass: 3.47
+
+mu: 0.523
+pi: 3.141592
+g: 9.81
