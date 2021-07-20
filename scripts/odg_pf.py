@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import rospy
 from sensor_msgs.msg import LaserScan
@@ -31,8 +31,10 @@ class ODGPF:
         self.scan_range = 0
         self.desired_wp_rt = [0,0]
 
-        self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
-        self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
+        # self.waypoint_real_path = rospy.get_param('wpt_path', '../map/wp_vegas.csv')
+        # self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
+        self.waypoint_real_path = '/home/nurdy/f1tenth_ws/src/local_planning_gnu/map/wp_vegas.csv'
+        self.waypoint_delimeter = ','
         
         self.front_idx = 539
         self.detect_range_s = 359
@@ -90,6 +92,9 @@ class ODGPF:
         self.lap_time_flag = True
         self.lap_time_start = 0
         self.lap_time = 0
+        self.logging_idx = 0
+
+        self.trajectory = open('/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv', 'w')
 
     def getDistance(self, a, b):
         dx = a[0] - b[0]
@@ -110,6 +115,13 @@ class ODGPF:
         
         return tf_point
 
+    def trajectory_logging(self):
+        if self.logging_idx < self.wp_index_current:
+            self.trajectory.write(f"{self.current_position[0]},{self.current_position[1]},{self.current_position[2]}\n")
+            self.logging_idx += 1
+        else:
+            pass
+    
     def xyt2rt(self, origin):
         rtpoint = []
 
@@ -464,6 +476,7 @@ class ODGPF:
             desired_angle = total_list#self.angle(total_list)
             self.main_drive(desired_angle)
 
+            self.trajectory_logging()
             if i % 10 == 0:
                 del self.s1[0]
                 del self.s2[0]
@@ -515,6 +528,7 @@ class ODGPF:
    
 
             rate.sleep()
+        self.trajectory.close()
 
 if __name__ == '__main__':
     rospy.init_node("test")
