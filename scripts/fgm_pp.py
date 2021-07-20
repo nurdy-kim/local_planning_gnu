@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-
-import queue
+# -*- coding: utf-8 -*-
+# import queue
 import rospy
 import numpy as np
 import threading
