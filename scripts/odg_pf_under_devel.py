@@ -21,7 +21,7 @@ class ODGPF:
         self.MASS = rospy.get_param('mass', 3.47)
         self.GRAVITY_ACC = rospy.get_param('g', 9.81)
         self.SPEED_MAX = rospy.get_param('max_speed', 20.0)
-        self.SPEED_MIN = rospy.get_param('min_speed', 01.5)
+        self.SPEED_MIN = rospy.get_param('min_speed', 1.5)
         self.RATE = rospy.get_param('rate', 100)
         self.ROBOT_SCALE = rospy.get_param('robot_scale', 0.25)
         self.ROBOT_LENGTH = rospy.get_param('robot_length', 0.325)

@@ -70,9 +70,9 @@ class FGM:
         self.current_speed = 5.0
         self.dmin_past = 0
 
-        rospy.Subscriber('/ICE/scan', LaserScan, self.subCallback_scan, queue_size = 10)
-        rospy.Subscriber('/ICE/odom', Odometry, self.Odome, queue_size = 10)
-        self.drive_pub = rospy.Publisher("/ICE/drive", AckermannDriveStamped, queue_size = 10 )
+        rospy.Subscriber('/scan', LaserScan, self.subCallback_scan, queue_size = 10)
+        rospy.Subscriber('/odom', Odometry, self.Odome, queue_size = 10)
+        self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size = 10 )
         self.marker_pub = rospy.Publisher('/marker', Marker, queue_size=10)
 
         self.lap_time_flag = True
@@ -112,7 +112,7 @@ class FGM:
         return rtpoint
 
     def get_waypoint(self):
-        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter ,dtype='float')
+        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')
         # file_wps = np.genfromtxt('/catkin_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
         temp_waypoint = []
         for i in file_wps:
@@ -456,7 +456,7 @@ class FGM:
             rate.sleep()
 
 if __name__ == '__main__':
-    rospy.init_node("test")
+    rospy.init_node("fgm_gnu")
     A = FGM()
     A.driving()
     rospy.spin()

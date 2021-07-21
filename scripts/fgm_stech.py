@@ -64,9 +64,9 @@ class FGM:
         self.theta_for = self.PI/3
         self.gap_cont = 0
 
-        rospy.Subscriber('/ICE/scan', LaserScan, self.subCallback_scan, queue_size = 10)
-        rospy.Subscriber('/ICE/odom', Odometry, self.Odome, queue_size = 10)
-        self.drive_pub = rospy.Publisher("/ICE/drive", AckermannDriveStamped, queue_size = 10 )
+        rospy.Subscriber('/scan', LaserScan, self.subCallback_scan, queue_size = 10)
+        rospy.Subscriber('/odom', Odometry, self.Odome, queue_size = 10)
+        self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size = 10 )
         self.marker_pub = rospy.Publisher('/marker', Marker, queue_size=10)
 
         self.lap_time_flag = True
