@@ -21,7 +21,7 @@ class ODGPF:
         self.MASS = rospy.get_param('mass', 3.47)
         self.GRAVITY_ACC = rospy.get_param('g', 9.81)
         self.SPEED_MAX = rospy.get_param('max_speed', 20.0)
-        self.SPEED_MIN = rospy.get_param('min_speed', 01.5)
+        self.SPEED_MIN = rospy.get_param('min_speed', 1.5)
         self.RATE = rospy.get_param('rate', 100)
         self.ROBOT_SCALE = rospy.get_param('robot_scale', 0.25)
         self.ROBOT_LENGTH = rospy.get_param('robot_length', 0.325)
@@ -92,8 +92,8 @@ class ODGPF:
         self.lap_time_flag = True
         self.lap_time_start = 0
         self.lap_time = 0
-        self.logging_idx = 0
 
+        self.logging_idx = 0
         self.trajectory = open('/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv', 'w')
 
     def getDistance(self, a, b):
@@ -119,6 +119,8 @@ class ODGPF:
         if self.logging_idx < self.wp_index_current:
             self.trajectory.write(f"{self.current_position[0]},{self.current_position[1]},{self.current_position[2]}\n")
             self.logging_idx += 1
+        elif self.logging_idx == self.wp_num:
+            pass
         else:
             pass
     
