@@ -65,7 +65,7 @@ class ODGPF:
 
         self.current_position = [0,0,0]
         self.interval = 0.00435
-        self.gamma = 2#0.2
+        self.gamma = 0.2
         #self.a_k = 1.2
         self.current_speed = 1.0
         self.set_speed = 0.0
@@ -80,7 +80,7 @@ class ODGPF:
         rospy.Subscriber('/odom', Odometry, self.Odome, queue_size = 10)
         self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size = 10 )
 
-        #self.marker_pub = rospy.Publisher('/marker', Marker, queue_size=10)
+        self.marker_pub = rospy.Publisher('/marker', Marker, queue_size=10)
 
         self.mode = 0
 
@@ -123,15 +123,18 @@ class ODGPF:
         return rtpoint
 
     def get_waypoint(self):
-        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter ,dtype='float')
-        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/vegas_paper.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas_test.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_obsmap1.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_obsmap2.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_curve.csv',delimiter=',',dtype='float')
         # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
+        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')
         temp_waypoint = []
         for i in file_wps:
             wps_point = [i[0],i[1],0]
             temp_waypoint.append(wps_point)
             self.wp_num += 1
-        #print("wp_num",self.wp_num)
+        # print("wp_num",self.wp_num)
         return temp_waypoint
 
     def find_desired_wp(self):
@@ -139,7 +142,7 @@ class ODGPF:
         self.nearest_distance = self.getDistance(self.waypoints[wp_index_temp], self.current_position)
 
         _vel = self.current_speed
-        self.LOOK = 3#0.5 + (0.3 * _vel)
+        self.LOOK = 0.5 + (0.3 * _vel)
         
         while True:
             wp_index_temp+=1
@@ -192,7 +195,8 @@ class ODGPF:
         marker.color.r = 1.0
         marker.color.g = 0.0
         marker.color.b = 0.0
-        #self.marker_pub.publish(marker)
+        # print(self.waypoints[self.idx_temp], self.idx_temp)
+        self.marker_pub.publish(marker)
 
     def define_obstacles(self, scan):
         obstacles = []
@@ -268,7 +272,7 @@ class ODGPF:
         f_total_list = [0]*self.scan_range
 
         for i in range(self.scan_range):
-            f_total_list[i] = f_att_list[i] #f_rep_list[i] + f_att_list[i]
+            f_total_list[i] = f_rep_list[i] + f_att_list[i]
 
         self.min_idx = np.argmin(f_total_list[self.detect_range_s:self.detect_range_e])+self.detect_range_s
 
@@ -318,6 +322,7 @@ class ODGPF:
         self.steering_angle = (-self.front_idx+goal)*self.interval
 
         controlled_angle = self.steering_angle
+
         if controlled_angle == 0.0:
             controlled_angle = 0.001
         path_radius = self.LOOK**2 / (2 * np.sin(controlled_angle))
@@ -332,15 +337,15 @@ class ODGPF:
         self.ackermann_data.drive.acceleration = 0
         self.ackermann_data.drive.jerk = 0
      
-        # if np.fabs(self.steering_angle) > 0.5:
-        #     # print("in")
-        #     if np.fabs(self.steering_angle_past - self.steering_angle) > 0.5 :
-        #         steering_angle = self.steering_angle_past#((self.steering_angle+self.steering_angle_past*(0.5))/2)
-        #         # print("to")
+        if np.fabs(self.steering_angle) > 0.5:
+            # print("in")
+            if np.fabs(self.steering_angle_past - self.steering_angle) > 0.5 :
+                steering_angle = self.steering_angle_past#((self.steering_angle+self.steering_angle_past*(0.5))/2)
+                # print("to")
 
         self.current_position_past = self.current_position[2]
         self.steering_angle_past = steering_angle
-        #self.f_rep_past_list = self.f_rep_list
+        self.f_rep_past_list = self.f_rep_list
 
         self.ackermann_angle = steering_angle
         self.ackermann_speed = self.set_speed
@@ -434,20 +439,20 @@ class ODGPF:
     def driving(self):
         rate = rospy.Rate(self.RATE)
         self.start = time.time()
-        # self.s1 = [0]*750
-        # self.s2 = [0]*750
-        # self.s3 = [0]*750
-        # self.s = np.arange(750)
+        self.s1 = [0]*750
+        self.s2 = [0]*750
+        self.s3 = [0]*750
+        self.s = np.arange(750)
 
-        # #speed monitoring
-        # self.b1 = [0]*750
-        # self.b2 = [0]*750
-        # self.b = np.arange(750)
+        #speed monitoring
+        self.b1 = [0]*750
+        self.b2 = [0]*750
+        self.b = np.arange(750)
         
-        # self.c1 = [0]*(self.detect_range*self.detect_n)
-        # self.c2 = [0]*(self.detect_range*self.detect_n)
-        # self.c3 = [0]*(self.detect_range*self.detect_n)
-        # self.c = np.arange(self.detect_range*self.detect_n)
+        self.c1 = [0]*(self.detect_range*self.detect_n)
+        self.c2 = [0]*(self.detect_range*self.detect_n)
+        self.c3 = [0]*(self.detect_range*self.detect_n)
+        self.c = np.arange(self.detect_range*self.detect_n)
         
         i = 0
         while not rospy.is_shutdown():
@@ -455,37 +460,37 @@ class ODGPF:
 
             if self.scan_range == 0: continue
             
-            #obstacles = self.define_obstacles(self.scan_filtered)
+            obstacles = self.define_obstacles(self.scan_filtered)
             #print(len(obstacles))
-            rep_list = []#self.rep_field(obstacles)
+            rep_list = self.rep_field(obstacles)
             att_list = self.att_field(self.desired_wp_rt)
             total_list = self.total_field(rep_list, att_list)
 
             desired_angle = total_list#self.angle(total_list)
             self.main_drive(desired_angle)
 
-            # if i % 10 == 0:
-            #     del self.s1[0]
-            #     del self.s2[0]
-            #     del self.s3[0]
+            if i % 10 == 0:
+                del self.s1[0]
+                del self.s2[0]
+                del self.s3[0]
                 
-            #     del self.b1[0]
-            #     del self.b2[0]
+                del self.b1[0]
+                del self.b2[0]
                 
-            #     del self.c1[0:self.detect_range]
-            #     del self.c2[0:self.detect_range]
-            #     del self.c3[0:self.detect_range]
+                del self.c1[0:self.detect_range]
+                del self.c2[0:self.detect_range]
+                del self.c3[0:self.detect_range]
 
-            #     self.s1.append(self.f_total_list[total_list])
-            #     self.s2.append(att_list[total_list])
-            #     self.s3.append(rep_list[total_list])
+                self.s1.append(self.f_total_list[total_list])
+                self.s2.append(att_list[total_list])
+                self.s3.append(rep_list[total_list])
 
-            #     self.b1.append(self.current_speed)
-            #     self.b2.append(self.set_speed)
+                self.b1.append(self.current_speed)
+                self.b2.append(self.set_speed)
 
-            #     self.c1 = self.c1 + self.f_total_list[self.detect_range_s:self.detect_range_e][::-1]
-            #     self.c2 = self.c2 + att_list[self.detect_range_s:self.detect_range_e][::-1]
-            #     self.c3 = self.c3 + rep_list[self.detect_range_s:self.detect_range_e][::-1]
+                self.c1 = self.c1 + self.f_total_list[self.detect_range_s:self.detect_range_e][::-1]
+                self.c2 = self.c2 + att_list[self.detect_range_s:self.detect_range_e][::-1]
+                self.c3 = self.c3 + rep_list[self.detect_range_s:self.detect_range_e][::-1]
 
                 # # ####################
                 # plt.subplot(1,1,1)
