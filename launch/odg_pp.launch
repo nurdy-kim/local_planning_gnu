@@ -1,12 +1,8 @@
 <launch>
 
     <include file="$(find f1tenth_gym_ros)/launch/gym_bridge_host.launch" />
-    <rosparam command="load" file="$(find car_duri)/params.yaml" />
-    <node name="Carminator" pkg="car_duri" type="odg_pf_pp.py" output="screen">
-        <remap from="/ICE/drive" to="/drive" />
-        <remap from="/ICE/odom" to="/odom" />
-        <remap from="/ICE/scan" to="/scan" />
-
+    <rosparam command="load" file="$(find local_planning_gnu)/params.yaml" />
+    <node name="Carminator" pkg="local_planning_gnu" type="odg_pf_pp.py" output="screen">
     </node>
 
 </launch>
