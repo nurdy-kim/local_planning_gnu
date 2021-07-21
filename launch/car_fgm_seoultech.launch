@@ -4,5 +4,8 @@
         <remap from="/ICE/drive" to="/vesc/high_level/ackermann_cmd_mux/input/nav_1" />
         <remap from="/ICE/odom" to="/pf/pose/odom" />
         <remap from="/ICE/scan" to="/scan" />
+        <!-- <remap from="/ICE/drive" to="/nav" />
+        <remap from="/ICE/odom" to="/odom" />
+        <remap from="/ICE/scan" to="/scan" /> -->
     </node>
 </launch>

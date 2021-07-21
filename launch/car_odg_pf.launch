@@ -1,8 +1,11 @@
 <launch>
     <rosparam command="load" file="$(find car_duri)/params.yaml" />
     <node name="Carminator" pkg="car_duri" type="odg_pf.py" output="screen">
-        <remap from="/drive" to="/vesc/high_level/ackermann_cmd_mux/input/nav_1" />
-        <remap from="/odom" to="/pf/pose/odom" />
-        <remap from="/scan" to="/scan" />
+        <remap from="/ICE/drive" to="/vesc/high_level/ackermann_cmd_mux/input/nav_1" />
+        <remap from="/ICE/odom" to="/pf/pose/odom" />
+        <remap from="/ICE/scan" to="/scan" />
+        <!-- <remap from="/ICE/drive" to="/nav" />
+        <remap from="/ICE/odom" to="/odom" />
+        <remap from="/ICE/scan" to="/scan" /> -->
     </node>
 </launch>

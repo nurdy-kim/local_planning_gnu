@@ -1,12 +1,12 @@
-wpt_path: "/home/nvidia/f1tenth_ws/src/car_duri/map/floor_8020.csv"
+wpt_path: "/home/lab13/f1tenth_ws/src/local_planning_gnu/map/floor8+7030.csv"
 wpt_delimeter: ","
 
-max_speed: 20.0
-min_speed: 01.5
+max_speed: 5
+min_speed: 1.5
 rate: 100
 
 robot_length: 0.325
-robot_scale: 0.25
+robot_scale: 0.35
 mass: 3.47
 
 mu: 0.523

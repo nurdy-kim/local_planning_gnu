@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import rospy
 from sensor_msgs.msg import LaserScan
@@ -21,7 +21,7 @@ class ODGPF:
         self.MASS = rospy.get_param('mass', 3.47)
         self.GRAVITY_ACC = rospy.get_param('g', 9.81)
         self.SPEED_MAX = rospy.get_param('max_speed', 20.0)
-        self.SPEED_MIN = rospy.get_param('min_speed', 01.5)
+        self.SPEED_MIN = rospy.get_param('min_speed', 1.5)
         self.RATE = rospy.get_param('rate', 100)
         self.ROBOT_SCALE = rospy.get_param('robot_scale', 0.25)
         self.ROBOT_LENGTH = rospy.get_param('robot_length', 0.325)
@@ -65,7 +65,7 @@ class ODGPF:
 
         self.current_position = [0,0,0]
         self.interval = 0.00435
-        self.gamma = 2#0.2
+        self.gamma = 2 #0.2
         #self.a_k = 1.2
         self.current_speed = 1.0
         self.set_speed = 0.0
