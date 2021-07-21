@@ -39,10 +39,10 @@
 
 4. Parameters
  
-   If you want to change the parameters, you must modify `params.yaml` 
+   If you want to change the parameters, you need modify `params.yaml` 
 
 
-    - `wpt_path` - **real** path of waypoint file
+    - `wpt_path` - **real** path of waypoint file (you **MUST** change!)
     - `wpt_delimeter` - delimiter of csv file
     - `max_speed` - Max speed 
     - `min_speed` - Min speed
