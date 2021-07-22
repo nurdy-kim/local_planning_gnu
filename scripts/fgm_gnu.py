@@ -113,9 +113,9 @@ class FGM:
 
     def get_waypoint(self):
         file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')
-        # file_wps = np.genfromtxt('/catkin_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
         temp_waypoint = []
         for i in file_wps:
+            
             wps_point = [i[0],i[1],0]
             temp_waypoint.append(wps_point)
             self.wp_num += 1
@@ -288,8 +288,6 @@ class FGM:
             i += 1
 
     def for_find_gap(self,scan):
-
-
         self.for_point = (int)(self.theta_for/self.interval)
         #[0] = start_idx, [1] = end_idx
 
@@ -456,7 +454,7 @@ class FGM:
             rate.sleep()
 
 if __name__ == '__main__':
-    rospy.init_node("fgm_gnu")
+    rospy.init_node("test")
     A = FGM()
     A.driving()
     rospy.spin()
