@@ -99,14 +99,26 @@ class logger:
         for i in range(N-1):
             self.find_nearest_on_trajectory(i)
             tr_idx = self.tr_idx_current
-
+            # print(i, tr_idx)
             div_u += np.fabs(theta_v[i] - theta_i[tr_idx])
         
         FR = div_u / ((N-1)*180)
+
         return FR
     
+    def calc_DR(self):
+        di_list = self.tr[:,3]
+        dv_list = self.tr[:,4]
+        N = len(di_list)
+        sum_dr = 0
+        for i in range(N):
+            tmp = di_list[i]/(N*dv_list[i])
+            sum_dr += tmp
+        
+        return sum_dr
+    
     def get_distance(self,x,y):
-        dx = x[0] - y[1]
+        dx = x[0] - y[0]
         dy = x[1] - y[1]
         
         return np.sqrt(dx**2 + dy**2)
@@ -114,14 +126,13 @@ class logger:
     def find_nearest_on_trajectory(self,idx):
         # Waypoint and Trajectory is not matching. So Find nearest point on trajectory.
         point = self.wp_list[idx]
-        print(point)
         
         idx_tmp = self.tr_idx_current
         self.nearest_dist = self.get_distance(self.tr_list[idx_tmp], point)
 
         while True:
             idx_tmp += 1
-            if idx_tmp >= len(self.wp_list) -1:
+            if idx_tmp >= len(self.tr_list) -1:
                 idx_tmp = 0
             
             tmp_dist = self.get_distance(self.tr_list[idx_tmp],point)
@@ -130,17 +141,20 @@ class logger:
                 self.nearest_dist = tmp_dist
                 self.tr_idx_current = idx_tmp
                 # print(1)
-            elif tmp_dist > self.nearest_dist or idx_tmp == self.tr_idx_current:
+            elif (tmp_dist > self.nearest_dist) or (idx_tmp == self.tr_idx_current):
                 # print(2)
                 break
-        
+    
+    def calc_comfort(self):
+        ax = self.tr[:,5]
 
     def run(self):
         while not rospy.is_shutdown():
             self.pub1.publish(self.wpArray)
             self.pub2.publish(self.trArray)
             FR = self.calc_FR()
-            print(FR)
+            DR = self.calc_DR()
+            print("follow :",(1-FR)*DR)
             rospy.sleep(1)
 
 

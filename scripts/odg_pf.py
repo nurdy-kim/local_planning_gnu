@@ -31,9 +31,7 @@ class ODGPF:
         self.scan_range = 0
         self.desired_wp_rt = [0,0]
 
-        # self.waypoint_real_path = rospy.get_param('wpt_path', '../map/wp_vegas.csv')
-        # self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
-        self.waypoint_real_path = '/home/nurdy/f1tenth_ws/src/local_planning_gnu/map/wp_vegas.csv'
+        self.waypoint_real_path = rospy.get_param('wpt_path', "/home/nurdy/f1tenth_ws/src/local_planning_gnu/map/wp_vegas.csv")
         self.waypoint_delimeter = ','
         
         self.front_idx = 539
@@ -94,7 +92,15 @@ class ODGPF:
         self.lap_time = 0
 
         self.logging_idx = 0
-        self.trajectory = open('/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv', 'w')
+        self.logging_flag = rospy.get_param('logging', False)
+        self.trj_path = rospy.get_param('trj_path',"/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv")
+        self.closest_obs_dist = 0
+        self.closest_wp_dist = 0
+        self.logger_switch()
+    
+    def logger_switch(self):
+        if self.logging_flag:
+            self.trajectory = open(self.trj_path,'w')    
 
     def getDistance(self, a, b):
         dx = a[0] - b[0]
@@ -116,10 +122,11 @@ class ODGPF:
         return tf_point
 
     def trajectory_logging(self):
-        if self.logging_idx < self.wp_index_current:
-            self.trajectory.write(f"{self.current_position[0]},{self.current_position[1]},{self.current_position[2]}\n")
+        
+        if self.logging_idx < self.wp_index_current and self.logging_flag:
+            self.trajectory.write(f"{self.current_position[0]},{self.current_position[1]},{self.current_position[2]},{self.closest_obs_dist},{self.closest_wp_dist},{self.current_speed}\n")
             self.logging_idx += 1
-        elif self.logging_idx == self.wp_num:
+        elif self.logging_idx == self.wp_num and self.logging_flag:
             pass
         else:
             pass
@@ -183,30 +190,6 @@ class ODGPF:
 
         transformed_nearest_point = self.transformPoint(self.current_position, self.waypoints[idx_temp])
         self.desired_wp_rt = self.xyt2rt(transformed_nearest_point)
-
-        self.idx_temp = idx_temp
-        marker = Marker()
-        marker.header.frame_id = "map"
-        marker.header.stamp = rospy.Time.now()
-        marker.ns = "mpc"
-        marker.id = 2
-        marker.type = marker.CUBE
-        marker.action = marker.ADD
-        marker.pose.position.x = self.waypoints[self.idx_temp][0]
-        marker.pose.position.y = self.waypoints[self.idx_temp][1]
-        marker.pose.position.z = 0.1
-        marker.pose.orientation.x = 0.0
-        marker.pose.orientation.y = 0.0
-        marker.pose.orientation.z = 0.0
-        marker.pose.orientation.w = 1.0
-        marker.scale.x = 0.2
-        marker.scale.y = 0.2
-        marker.scale.z = 0.1
-        marker.color.a = 1.0
-        marker.color.r = 1.0
-        marker.color.g = 0.0
-        marker.color.b = 0.0
-        self.marker_pub.publish(marker)
 
     def define_obstacles(self, scan):
         obstacles = []
@@ -444,6 +427,24 @@ class ODGPF:
                         else: break
                     else: break
                     j += 1
+                
+    def find_nearest_obs(self,obs):
+        min_di = 0
+        min_dv = 0
+        if len(obs) <= 1 :
+            min_di = 20
+            min_dv = 20
+        else:
+            min_di = self.getDistance(self.current_position, obs[0])
+            for i in range(len(obs)):
+                _dist = self.getDistance(self.current_position,obs[i])
+                if _dist <= min_di:
+                    min_di = _dist
+                    min_dv = self.getDistance(self.waypoints[self.wp_index_current], obs[i])
+        
+        self.closest_obs_dist = min_di
+        self.closest_wp_dist = min_dv
+
 
     def driving(self):
         rate = rospy.Rate(self.RATE)
@@ -470,7 +471,8 @@ class ODGPF:
             if self.scan_range == 0: continue
             
             obstacles = self.define_obstacles(self.scan_filtered)
-            #print(len(obstacles))
+            # print(len(obstacles))
+            self.find_nearest_obs(obstacles)
             rep_list = self.rep_field(obstacles)
             att_list = self.att_field(self.desired_wp_rt)
             total_list = self.total_field(rep_list, att_list)
@@ -530,7 +532,9 @@ class ODGPF:
    
 
             rate.sleep()
-        self.trajectory.close()
+        
+        if self.logging_flag:
+            self.trajectory.close()
 
 if __name__ == '__main__':
     rospy.init_node("test")

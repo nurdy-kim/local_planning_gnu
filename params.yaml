@@ -1,5 +1,7 @@
-wpt_path: "/home/nvidia/f1tenth_ws/src/car_duri/map/floor_8020.csv"
+wpt_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/map/wp_vegas.csv"
 wpt_delimeter: ","
+trj_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
+logging: True
 
 max_speed: 20.0
 min_speed: 01.5
