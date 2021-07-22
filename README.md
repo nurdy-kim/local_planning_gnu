@@ -47,11 +47,11 @@
     - `max_speed` - Max speed 
     - `min_speed` - Min speed
     - `rate` - provoid particular rate for a loop (Hz)
-    - `robot_length` - lenght of wheelbase
+    - `robot_length` - length of wheelbase
 
 
-    - `robot_scale` - 
+    - `robot_scale` - width of car
     - `mass` - mass of car
-    - `mu` - 
+    - `mu` - surface friction coefficient
     - `pi` - π
     - `g`- Gravitational acceleration 
