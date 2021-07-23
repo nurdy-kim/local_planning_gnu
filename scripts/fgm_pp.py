@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import multiprocessing
 import queue
@@ -23,13 +23,13 @@ class maindrive(threading.Thread):
         self.main_q = main_q
         self.RATE = 100
         self.ackermann_data = AckermannDriveStamped()
-        self.drive_pub = rospy.Publisher("/ICE/drive", AckermannDriveStamped, queue_size=10)
+        self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size=10)
 
     def run(self):
         obstacle=False 
         rate = rospy.Rate(self.RATE)
 
-        while not rospy.is_shutdown():
+        while True:
             #if self.scan_range == 0: continue
             ackermann = self.main_q.get()
             self.ackermann_data.drive.steering_angle = ackermann[1]
@@ -85,6 +85,7 @@ class global_pure(threading.Thread):
         self.lap_time = 0
         self.interval = 0
         self.scan_range = 0
+        self.trajectory = open('../f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv', 'w')
 
     def run(self):
         rate = rospy.Rate(self.RATE)
@@ -111,7 +112,7 @@ class global_pure(threading.Thread):
             # if self.main_q.full():
             #     self.main_q.get()
             self.main_q.put(ackermann)
-            print("global")
+            # print("global")
             rate.sleep()
     
     def find_path(self):
@@ -213,6 +214,8 @@ class local_fgm(threading.Thread):
         self.idx_save = 0
 
         self.dmin_past = 0
+        self.lap_time_flag = True
+        self.trajectory = open('../f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv', 'w')
 
     def run(self):
         rate = rospy.Rate(self.RATE)
@@ -230,12 +233,12 @@ class local_fgm(threading.Thread):
             self.front_idx = int(self.scan_range / 2)
             self.actual_lookahead = sensor_data[3]
             
-            print(sensor_data[1])
+            #print(sensor_data[1])
             self.find_gap(self.scan_filtered)
             self.for_find_gap(self.scan_filtered)
             gap = self.find_best_gap(self.desired_wp_rt)
             self.main_drive(gap)
-            print("local")
+            # print("local")
             #rate.sleep()
 
 
@@ -331,7 +334,7 @@ class local_fgm(threading.Thread):
                     temp_distance = 0
                     distance = 0
                     gap_idx = i
-                    #self.gaps[i][2] = ref_idx
+                    # self.gaps[i][2] = ref_idx
                     break
                 i += 1
             #가장 작은 distance를 갖는 gap만 return
@@ -400,12 +403,13 @@ class local_fgm(threading.Thread):
         if dmin == 0:
             dmin = self.dmin_past
 
-        controlled_angle = ( (self.GAP_THETA_GAIN/dmin)*self.max_angle + self.REF_THETA_GAIN*self.wp_angle)/(self. GAP_THETA_GAIN/dmin + self.REF_THETA_GAIN) 
+        controlled_angle = ((self.GAP_THETA_GAIN/dmin)*self.max_angle + self.REF_THETA_GAIN*self.wp_angle)/(self. GAP_THETA_GAIN/dmin + self.REF_THETA_GAIN) 
         distance = 1.0
         #path_radius = 경로 반지름 
         path_radius = distance / (2*np.sin(controlled_angle))
         #
         steering_angle = np.arctan(self.RACECAR_LENGTH/path_radius)
+
         # controlled_angle = self.max_angle
         # if controlled_angle == 0.0:
         #     controlled_angle = 0.001
@@ -465,8 +469,8 @@ class Obstacle_detect(threading.Thread):
         self.actual_lookahead = 0
         self.current_speed = 0
 
-        rospy.Subscriber('/ICE/scan', LaserScan, self.subCallback_od, queue_size=10)
-        rospy.Subscriber('/ICE/odom', Odometry, self.Odome, queue_size = 10)
+        rospy.Subscriber('/scan', LaserScan, self.subCallback_od, queue_size=10)
+        rospy.Subscriber('/odom', Odometry, self.Odome, queue_size = 10)
     
     def Odome(self, odom_msg):
         # print("11")
@@ -528,10 +532,8 @@ class Obstacle_detect(threading.Thread):
         self.lookahead_desired = 0.5 + (0.3 * _vel)
     
     def get_waypoint(self):
-        #file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
-        # file_wps = np.genfromtxt('/home/lab/f1tenth_ws/src/car_duri/wp_vegas.csv', delimiter=',', dtype='float')
         file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')
-    
+
         temp_waypoint = []
         for i in file_wps:
             wps_point = [i[0],i[1],0]
@@ -683,7 +685,7 @@ class Obstacle_detect(threading.Thread):
 
         self.obs = False
         for i in range(len(self.len_obs)):
-            if self.len_obs[i][0] > 600 or self.len_obs[i][1] < 480:
+            if self.len_obs[i][0] > 680 or self.len_obs[i][1] < 400:
                 self.obs = False
             else:
                 self.obs= True
@@ -704,8 +706,8 @@ class Obstacle_detect(threading.Thread):
                 self.transformed_desired_point = self.xyt2rt(self.transformed_desired_point)
             # self.transformed_desired_point = self.xyt2rt(self.transformed_desired_point)
                 sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead]
-                # if self.local_od_q.full():
-                #     self.local_od_q.get()
+                if self.local_od_q.full():
+                    self.local_od_q.get()
                 self.local_od_q.put(sensor_data)
             else:
                 self.transformed_desired_point = self.transformPoint(self.current_position, self.desired_point)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env py
 # -*- coding: utf-8 -*-
 import rospy
 import math
@@ -64,9 +64,9 @@ class FGM:
         self.theta_for = self.PI/3
         self.gap_cont = 0
 
-        rospy.Subscriber('/ICE/scan', LaserScan, self.subCallback_scan, queue_size = 10)
-        rospy.Subscriber('/ICE/odom', Odometry, self.Odome, queue_size = 10)
-        self.drive_pub = rospy.Publisher("/ICE/drive", AckermannDriveStamped, queue_size = 10 )
+        rospy.Subscriber('/scan', LaserScan, self.subCallback_scan, queue_size = 10)
+        rospy.Subscriber('/odom', Odometry, self.Odome, queue_size = 10)
+        self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size = 10 )
         self.marker_pub = rospy.Publisher('/marker', Marker, queue_size=10)
 
         self.lap_time_flag = True
@@ -109,7 +109,6 @@ class FGM:
 
     def get_waypoint(self):
         file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter ,dtype='float')
-        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas_test.csv',delimiter=',',dtype='float')
         temp_waypoint = []
         for i in file_wps:
             wps_point = [i[0],i[1],0]

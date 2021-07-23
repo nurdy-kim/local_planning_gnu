@@ -25,7 +25,7 @@ class maindrive:
         self.obstacle_q = obstacle_q
         self.RATE = rospy.get_param('rate', 100)
         self.ackermann_data = AckermannDriveStamped()
-        self.drive_pub = rospy.Publisher("/ICE/drive", AckermannDriveStamped, queue_size=10)
+        self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size=10)
 
     def maindrives(self):
         obstacle=False 
@@ -459,8 +459,8 @@ class local_fgm(threading.Thread):
         self.idx_save = 0
 
         self.dmin_past = 0
-        rospy.Subscriber('/ICE/scan', LaserScan, self.subCallback_scan, queue_size=10)
-        rospy.Subscriber('/ICE/odom', Odometry, self.Odome, queue_size=10)
+        rospy.Subscriber('/scan', LaserScan, self.subCallback_scan, queue_size=10)
+        rospy.Subscriber('/odom', Odometry, self.Odome, queue_size=10)
         self.marker_pub = rospy.Publisher('/marker', Marker, queue_size=10)
 
     def run(self):
@@ -930,8 +930,8 @@ class Obstacle_detect(threading.Thread):
         self.current_speed = [0,0,0]
         self.set_steering = 1.0
 
-        rospy.Subscriber('/ICE/scan', LaserScan, self.subCallback_od, queue_size=10)
-        rospy.Subscriber('/ICE/odom', Odometry, self.Odome, queue_size = 10)
+        rospy.Subscriber('/scan', LaserScan, self.subCallback_od, queue_size=10)
+        rospy.Subscriber('/odom', Odometry, self.Odome, queue_size = 10)
     
     def Odome(self, odom_msg):
         qx = odom_msg.pose.pose.orientation.x 

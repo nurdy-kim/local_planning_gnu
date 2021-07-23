@@ -31,8 +31,15 @@ class ODGPF:
         self.scan_range = 0
         self.desired_wp_rt = [0,0]
 
+<<<<<<< HEAD
         self.waypoint_real_path = rospy.get_param('wpt_path', "/home/nurdy/f1tenth_ws/src/local_planning_gnu/map/wp_vegas.csv")
         self.waypoint_delimeter = ','
+=======
+        self.waypoint_real_path = rospy.get_param('wpt_path', '../map/wp_vegas.csv')
+        self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
+        # self.waypoint_real_path = '/home/nurdy/f1tenth_ws/src/local_planning_gnu/map/wp_vegas.csv'
+        # self.waypoint_delimeter = ','
+>>>>>>> eac6ff791d05f69ffcbc7c921e882185005372ec
         
         self.front_idx = 539
         self.detect_range_s = 359
