@@ -1,8 +1,5 @@
 <launch>
-    <rosparam command="load" file="$(find local_planning_gnu)/params.yaml" />
+    <rosparam command="load" file="$(find local_planning_gnu)/car_params.yaml" />
     <node name="Carminator" pkg="local_planning_gnu" type="fgm_gnu.py" output="screen">
-        <remap from="/drive" to="/vesc/high_level/ackermann_cmd_mux/input/nav_1" />
-        <remap from="/odom" to="/pf/pose/odom" />
-        <remap from="/scan" to="/scan" />
     </node>
 </launch>

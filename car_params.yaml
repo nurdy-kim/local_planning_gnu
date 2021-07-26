@@ -1,14 +1,14 @@
-drive_topic: /drive
-odom_topic: /odom
+drive_topic: /vesc/high_level/ackermann_cmd_mux/input/nav_1
+odom_topic: /pf/pose/odom
 scan_topic: /scan
-marker_topic: /marker
+marker_topic: /scan
 
-wpt_path: "/home/lab/f1tenth_ws/src/car_duri/utill/wp_vegas.csv" # Locate waypoints(csv) files real path 
+wpt_path: "/home/nvidia/f1tenth_ws/src/local_planning_gnu/utill/wp_vegas.csv" # Locate waypoints(csv) files real path 
 wpt_delimeter: ","
 
-time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record"
+time_data_path: "/home/nvidia/f1tenth_ws/src/local_planning_gnu/record"
 
-trj_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
+trj_path: "/home/nvidia/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
 logging: True
 
 max_speed: 20.0
