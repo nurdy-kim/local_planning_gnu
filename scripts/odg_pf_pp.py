@@ -17,6 +17,7 @@ from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker, MarkerArray
+from f1tenth_gym_ros.msg import RaceInfo
 
 class maindrive(threading.Thread):
     def __init__(self, main_q):
@@ -258,10 +259,6 @@ class local_fgm(threading.Thread):
 
         self.idx_temp = 0
         self.flag = False
-
-        self.lap_time_flag = True
-        self.lap_time_start = 0
-        self.lap_time = 0
 
         self.marker_pub = rospy.Publisher(self.marker_topic, Marker, queue_size=10)
 
@@ -559,7 +556,6 @@ class Obstacle_detect(threading.Thread):
         self.CURRENT_WP_CHECK_OFFSET = 2
         self.actual_lookahead = 0
         self.current_speed = 0
-        self.lap_time_flag = True
         self.idx_temp = 0
 
         self.marker_pub = rospy.Publisher(self.marker_topic, Marker, queue_size=10)
@@ -587,10 +583,6 @@ class Obstacle_detect(threading.Thread):
         self.current_position = [current_position_x,current_position_y, current_position_theta, self.current_speed, self.set_steering]
         # print(self.current_position)
 
-        if self.current_speed > 1.0 and self.lap_time_flag:
-            self.lap_time_flag = False
-            self.lap_time_start = time.time()
-    
     def find_nearest_wp(self):
         wp_index_temp = self.wp_index_current
         self.nearest_distance = self.getDistance(self.waypoints[wp_index_temp], self.current_position)
@@ -599,9 +591,6 @@ class Obstacle_detect(threading.Thread):
             wp_index_temp+=1
             if wp_index_temp >= len(self.waypoints)-1:
                 wp_index_temp = 0
-                lap_time_end = time.time()
-                self.lap_time = lap_time_end - self.lap_time_start
-                print(self.lap_time)
             
             temp_distance = self.getDistance(self.waypoints[wp_index_temp], self.current_position)
 

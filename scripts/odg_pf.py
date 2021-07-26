@@ -12,6 +12,7 @@ import csv
 
 import matplotlib.pyplot as plt
 from visualization_msgs.msg import Marker, MarkerArray
+from f1tenth_gym_ros.msg import RaceInfo
 
 class ODGPF:
     def __init__(self):
@@ -90,7 +91,8 @@ class ODGPF:
         self.ackermann_data.drive.jerk = 0
         self.ackermann_data.drive.steering_angle = 0
         self.ackermann_data.drive.steering_angle_velocity = 0
-
+        
+        rospy.Subscriber("/race_info", RaceInfo, self.update_race_info, queue_size = 10)
         rospy.Subscriber(self.scan_topic, LaserScan, self.subCallback_scan, queue_size = 10)
         rospy.Subscriber(self.odom_topic, Odometry, self.Odome, queue_size = 10)
         self.drive_pub = rospy.Publisher(self.drive_topic, AckermannDriveStamped, queue_size = 10 )
@@ -101,10 +103,8 @@ class ODGPF:
 
         self.idx_temp = 0
         self.flag = False
-        
-        self.lap_time_flag = True
-        self.lap_time_start = 0
-        self.lap_time = 0
+        self.race_info = None 
+        self.lap = 0
 
         # Trajectory Logging
         self.tr_flag = rospy.get_param('logging',False)
@@ -115,7 +115,27 @@ class ODGPF:
 
         if self.tr_flag:
             self.trajectory = open(self.trj_path,'w')
+    
+    def update_race_info(self,race_info):
+        """
+        header: 
+            seq: 2442
+            stamp: 
+                secs: 1627305621
+                nsecs:  19615888
+            frame_id: ''
+            ego_lap_count: 0.0
+            opp_lap_count: 0.0
+            ego_elapsed_time: 9.300000190734863
+            opp_elapsed_time: 9.300000190734863
+            ego_collision: False
+            opp_collision: False
+        """
+        self.race_info = race_info
         
+        if self.race_info.ego_lap_count > self.lap:
+            print('lap_count',self.race_info.ego_lap_count,'elapsed_time', self.race_info.elapsed_time)
+            self.lap += 1
     
     def getDistance(self, a, b):
         dx = a[0] - b[0]
@@ -211,8 +231,6 @@ class ODGPF:
 
             if wp_index_temp >= self.wp_num-1:
                 wp_index_temp = 0
-                lap_time_end = time.time()
-                self.lap_time = lap_time_end - self.lap_time_start
                 # print(self.lap_time)
 
             temp_distance = self.getDistance(self.waypoints[wp_index_temp], self.current_position)
@@ -455,10 +473,6 @@ class ODGPF:
         _steer = odom_msg.twist.twist.angular.z
         self.current_speed = _speed
         self.set_steering = _steer
-
-        if self.current_speed > 1.0 and self.lap_time_flag:
-            self.lap_time_flag = False
-            self.lap_time_start = time.time()
 
     def subCallback_scan(self,msg_sub):
         self.scan_angle_min = msg_sub.angle_min
