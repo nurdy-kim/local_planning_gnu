@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import rospy
 from sensor_msgs.msg import LaserScan
@@ -107,12 +107,51 @@ class ODGPF:
         self.lap_time_start = 0
         self.lap_time = 0
 
+        # Trajectory Logging
+        self.tr_flag = rospy.get_param('logging',False)
+        self.logging_idx = 0
+        self.closest_obs_dist = 0
+        self.closest_wp_dist = 0
+
+        if self.tr_flag:
+            self.trajectory = open(self.trj_path,'w')
+        
+    
     def getDistance(self, a, b):
         dx = a[0] - b[0]
         dy = a[1] - b[1]
         
         return np.sqrt(dx**2 + dy**2)
 
+    def trajectory_logging(self):
+        if self.logging_idx <= self.wp_index_current:
+            self.trajectory.write(f"{self.current_position[0]},")
+            self.trajectory.write(f"{self.current_position[1]},")
+            self.trajectory.write(f"{self.current_position[2]},")
+            self.trajectory.write(f"{self.closest_obs_dist},")
+            self.trajectory.write(f"{self.closest_wp_dist},")
+            self.trajectory.write(f"{self.current_speed}\n")
+            self.logging_idx += 1
+        else:
+            pass
+    
+    def find_nearest_obs(self,obs):
+        min_di = 0
+        min_dv = 0
+        if len(obs) <= 1:
+            min_di = 20
+            min_dv = 20
+        else:
+            min_di = self.getDistance(self.current_position,obs[0])
+            for i in range(len(obs)):
+                _dist = self.getDistance(self.current_position,obs[i])
+                if _dist <= min_di:
+                    min_di = _dist
+                    min_dv = self.getDistance(self.waypoints[self.wp_index_current], obs[i])
+        
+        self.closest_obs_dist = min_di
+        self.closest_wp_dist = min_dv
+            
     def transformPoint(self, origin, target):
         theta = self.PI/2 - origin[2]
         dx = target[0] - origin[0]
@@ -171,7 +210,7 @@ class ODGPF:
                 wp_index_temp = 0
                 lap_time_end = time.time()
                 self.lap_time = lap_time_end - self.lap_time_start
-                print(self.lap_time)
+                # print(self.lap_time)
 
             temp_distance = self.getDistance(self.waypoints[wp_index_temp], self.current_position)
 
@@ -265,7 +304,7 @@ class ODGPF:
                 obstacle_inf = [angle_obstacle_center, sigma_obstacle, a_k]
                 
                 # print('angle_center',angle_obstacle_center,end=' ')
-                print(sigma_obstacle)
+                # print(sigma_obstacle)
                 obstacles.append(obstacle_inf)
         
             
@@ -505,7 +544,7 @@ class ODGPF:
             loop += 1
 
             obstacles = self.define_obstacles(self.scan_filtered)
-            #print(len(obstacles))
+            self.find_nearest_obs(obstacles)
             rep_list = self.rep_field(obstacles)
             att_list = self.att_field(self.desired_wp_rt)
             total_list = self.total_field(rep_list, att_list)
@@ -520,6 +559,7 @@ class ODGPF:
                 tn1: driving loop final Time
             """
             self.time_data_writer.writerow([loop, tn1-tn, tn1-tn0])
+            self.trajectory_logging()
             if i % 10 == 0:
                 # del self.s1[0]
                 # del self.s2[0]
@@ -569,8 +609,10 @@ class ODGPF:
                 # print(self.steering_angle_past)
                 # # # ##################
    
-
+        
             rate.sleep()
+        if self.tr_flag:
+            self.trajectory.close()
 
 if __name__ == '__main__':
     rospy.init_node("driver_odg_pf")

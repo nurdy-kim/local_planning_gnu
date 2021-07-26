@@ -22,7 +22,9 @@ class logger:
 
         self.tr_idx_current = 0
         self.nearest_dist = 0
-    
+
+        self.weighted_RMS_k = [1.4,1.4,1.0]
+
     def marking_wp(self):
         for i in range(len(self.wp_list)):
             # Waypoints Marking
@@ -146,7 +148,28 @@ class logger:
                 break
     
     def calc_comfort(self):
+        comfort_score = 0
+
         ax = self.tr[:,5]
+        aw_x = np.average(ax)
+        # ay = self.tr[:,6]
+        # aw_y = np.average(ay)
+        final_aw = np.sqrt(self.weighted_RMS_k[0]**2 * aw_x)
+        print(final_aw)
+        if final_aw < 0.315:
+            comfort_score = 10
+        elif final_aw < 0.63:
+            comfort_score = 8
+        elif final_aw <1:
+            comfort_score = 6
+        elif final_aw <1.6:
+            comfort_score = 4
+        elif final_aw <2.5:
+            comfort_score = 2
+        elif final_aw > 2.5:
+            comfort_score = 0
+        
+        return comfort_score
 
     def run(self):
         while not rospy.is_shutdown():
@@ -154,7 +177,10 @@ class logger:
             self.pub2.publish(self.trArray)
             FR = self.calc_FR()
             DR = self.calc_DR()
-            print("follow :",(1-FR)*DR)
+            Comfort = self.calc_comfort()
+            print("Safety metric :",(1-FR)*DR)
+            print("Comfort : ", Comfort)
+
             rospy.sleep(1)
 
 
