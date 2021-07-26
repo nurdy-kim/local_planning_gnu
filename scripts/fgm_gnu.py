@@ -4,6 +4,7 @@ import rospy
 import math
 import numpy as np
 import time
+import csv
 
 from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
@@ -14,6 +15,11 @@ class FGM:
     def __init__(self):
         
         self.ackermann_data = AckermannDriveStamped()
+
+        self.drive_topic = rospy.get_param("drive_topic", "/drive") 
+        self.odom_topic = rospy.get_param("odom_topic", "/odom")
+        self.scan_topic = rospy.get_param("scan_topic", "/scan")
+        self.marker_topic = rospy.get_param("marker_topic", "/marker")
 
         self.LOOK = 2.5
         self.RACECAR_LENGTH = rospy.get_param('robot_length', 0.325)
@@ -33,6 +39,12 @@ class FGM:
 
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
+
+        self.time_data_file_name = "fgm_gnu_time_data"
+        self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_gnu_time_data.csv")
+        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
+        self.time_data_writer = csv.writer(self.time_data)
+
         
         self.ackermann_data.drive.acceleration = 0
         self.ackermann_data.drive.jerk = 0
@@ -70,10 +82,10 @@ class FGM:
         self.current_speed = 5.0
         self.dmin_past = 0
 
-        rospy.Subscriber('/scan', LaserScan, self.subCallback_scan, queue_size = 10)
-        rospy.Subscriber('/odom', Odometry, self.Odome, queue_size = 10)
-        self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size = 10 )
-        self.marker_pub = rospy.Publisher('/marker', Marker, queue_size=10)
+        rospy.Subscriber(self.scan_topic, LaserScan, self.subCallback_scan, queue_size = 10)
+        rospy.Subscriber(self.odom_topic, Odometry, self.Odome, queue_size = 10)
+        self.drive_pub = rospy.Publisher(self.drive_topic, AckermannDriveStamped, queue_size = 10 )
+        self.marker_pub = rospy.Publisher(self.marker_topic, Marker, queue_size=10)
 
         self.lap_time_flag = True
         self.lap_time_start = 0
@@ -113,9 +125,14 @@ class FGM:
 
     def get_waypoint(self):
         file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')
+        """
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_obsmap2.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas_test.csv',delimiter=',',dtype='float')
+        file_wps = np.genfromtxt('/catkin_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_floor8.csv',delimiter=',',dtype='float')
+        """
         temp_waypoint = []
         for i in file_wps:
-            
             wps_point = [i[0],i[1],0]
             temp_waypoint.append(wps_point)
             self.wp_num += 1
@@ -439,10 +456,13 @@ class FGM:
         self.dmin_past = dmin
 
     def driving(self):
+        loop = 0
+        tn = time.time()
         rate = rospy.Rate(self.RATE)
         while not rospy.is_shutdown():
-
             if self.scan_range == 0: continue
+            tn0 = time.time()
+            loop += 1
             
             self.find_gap(self.scan_filtered)
             self.for_find_gap(self.scan_filtered)
@@ -450,11 +470,17 @@ class FGM:
             self.desired_gap = self.find_best_gap(self.desired_wp_rt)
 
             self.main_drive(self.desired_gap)
-
+            tn1 = time.time()
+            """
+                tn:  initinalize Time
+                tn0: driving loop start Time
+                tn1: driving loop final Time
+            """
+            self.time_data_writer.writerow([loop, tn1-tn, tn1-tn0])
             rate.sleep()
 
 if __name__ == '__main__':
-    rospy.init_node("test")
+    rospy.init_node("driver_fgm_gnu")
     A = FGM()
     A.driving()
     rospy.spin()

@@ -1,7 +1,17 @@
-wpt_path: "/home/nvidia/f1tenth_ws/src/car_duri/map/floor_8020.csv" # Locate waypoints(csv) files real path 
+drive_topic: /drive
+odom_topic: /odom
+scan_topic: /scan
+marker_topic: /marker
+
+wpt_path: "/home/lab/f1tenth_ws/src/car_duri/utill/wp_vegas.csv" # Locate waypoints(csv) files real path 
 wpt_delimeter: ","
+
+time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record"
+
 trj_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
 logging: True
+
+time_data_path: ""
 
 max_speed: 20.0
 min_speed: 01.5

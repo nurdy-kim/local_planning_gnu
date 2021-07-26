@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import multiprocessing
 import queue
@@ -23,7 +23,8 @@ class maindrive(threading.Thread):
         self.main_q = main_q
         self.RATE = 100
         self.ackermann_data = AckermannDriveStamped()
-        self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size=10)
+        self.drive_topic = rospy.get_param("drive_topic", "/drive")
+        self.drive_pub = rospy.Publisher(self.drive_topic, AckermannDriveStamped, queue_size=10)
 
     def run(self):
         obstacle=False 
@@ -85,7 +86,6 @@ class global_pure(threading.Thread):
         self.lap_time = 0
         self.interval = 0
         self.scan_range = 0
-        self.trajectory = open('../f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv', 'w')
 
     def run(self):
         rate = rospy.Rate(self.RATE)
@@ -215,7 +215,7 @@ class local_fgm(threading.Thread):
 
         self.dmin_past = 0
         self.lap_time_flag = True
-        self.trajectory = open('../f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv', 'w')
+
 
     def run(self):
         rate = rospy.Rate(self.RATE)
@@ -440,6 +440,9 @@ class Obstacle_detect(threading.Thread):
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
 
+        self.odom_topic = rospy.get_param("odom_topic", "/odom")
+        self.scan_topic = rospy.get_param("scan_topic", "/scan")
+
         self.interval = 0.00435
         self.scan_range = 0
         self.front_idx = 0
@@ -469,8 +472,8 @@ class Obstacle_detect(threading.Thread):
         self.actual_lookahead = 0
         self.current_speed = 0
 
-        rospy.Subscriber('/scan', LaserScan, self.subCallback_od, queue_size=10)
-        rospy.Subscriber('/odom', Odometry, self.Odome, queue_size = 10)
+        rospy.Subscriber(self.scan_topic, LaserScan, self.subCallback_od, queue_size=10)
+        rospy.Subscriber(self.odom_topic, Odometry, self.Odome, queue_size = 10)
     
     def Odome(self, odom_msg):
         # print("11")
@@ -532,8 +535,15 @@ class Obstacle_detect(threading.Thread):
         self.lookahead_desired = 0.5 + (0.3 * _vel)
     
     def get_waypoint(self):
-        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')
-
+        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')      
+        # params.yaml 파일 수정 부탁드립니다... 제발...
+        """
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_obsmap2.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas_test.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_floor8.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_curve.csv',delimiter=',',dtype='float')
+        """
         temp_waypoint = []
         for i in file_wps:
             wps_point = [i[0],i[1],0]
@@ -719,7 +729,7 @@ class Obstacle_detect(threading.Thread):
             rate.sleep()
 
 if __name__ == '__main__':
-    rospy.init_node("test")
+    rospy.init_node("driver_fgm_pp")
     global_od_q = Queue(1)
     local_od_q = Queue(1)
     main_q = Queue(1)
