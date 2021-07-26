@@ -17,6 +17,7 @@ from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker, MarkerArray
+from f1tenth_gym_ros.msg import RaceInfo
 
 class maindrive(threading.Thread):
     def __init__(self, main_q):
@@ -86,10 +87,7 @@ class global_pure(threading.Thread):
         self.scan_filtered = [0]*1080
         self.manualSpeedArray=[]
         self.idx_save = 0
-        
-        self.lap_time_flag = True
-        self.lap_time_start = 0
-        self.lap_time = 0
+
         self.interval = 0
         self.scan_range = 0
 
@@ -232,7 +230,6 @@ class local_fgm(threading.Thread):
         self.idx_save = 0
 
         self.dmin_past = 0
-        self.lap_time_flag = True
 
 
     def run(self):
