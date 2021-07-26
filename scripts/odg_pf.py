@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import rospy
 from sensor_msgs.msg import LaserScan
@@ -8,12 +8,19 @@ from nav_msgs.msg import Odometry
 import math
 import numpy as np
 import time
+import csv
 
 import matplotlib.pyplot as plt
 from visualization_msgs.msg import Marker, MarkerArray
 
 class ODGPF:
     def __init__(self):
+
+        self.drive_topic = rospy.get_param("drive_topic", "/drive") 
+        self.odom_topic = rospy.get_param("odom_topic", "/odom")
+        self.scan_topic = rospy.get_param("scan_topic", "/scan")
+        self.marker_topic = rospy.get_param("marker_topic", "/marker")
+
         self.rep_count = 0
         self.ackermann_data = AckermannDriveStamped()
         self.PI = rospy.get_param('pi', 3.141592)
@@ -31,12 +38,21 @@ class ODGPF:
         self.scan_range = 0
         self.desired_wp_rt = [0,0]
 
-        self.waypoint_real_path = rospy.get_param('wpt_path', "/home/nurdy/f1tenth_ws/src/local_planning_gnu/map/wp_vegas.csv")
-        self.waypoint_delimeter = ','
+        self.time_data_file_name = "odg_pf_time_data"
+        self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_stech_time_data.csv")
+        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
+        self.time_data_writer = csv.writer(self.time_data)
+
+        self.waypoint_real_path = rospy.get_param('wpt_path', '../map/wp_vegas.csv')
+        self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
+
+        self.trj_path = rospy.get_param('trj_path', '')
+        self.time_data_path = rospy.get_param('time_data_path', '')
+
         
         self.front_idx = 539
-        self.detect_range_s = 359
-        self.detect_range_e = 719
+        self.detect_range_s = 299
+        self.detect_range_e = 779
         self.detect_range = self.detect_range_e - self.detect_range_s
         self.detect_n = 5
 
@@ -65,7 +81,7 @@ class ODGPF:
 
         self.current_position = [0,0,0]
         self.interval = 0.00435
-        self.gamma = 0.2
+        self.gamma = 0.8
         #self.a_k = 1.2
         self.current_speed = 1.0
         self.set_speed = 0.0
@@ -76,11 +92,11 @@ class ODGPF:
         self.ackermann_data.drive.steering_angle = 0
         self.ackermann_data.drive.steering_angle_velocity = 0
 
-        rospy.Subscriber('/scan', LaserScan, self.subCallback_scan, queue_size = 10)
-        rospy.Subscriber('/odom', Odometry, self.Odome, queue_size = 10)
-        self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size = 10 )
+        rospy.Subscriber(self.scan_topic, LaserScan, self.subCallback_scan, queue_size = 10)
+        rospy.Subscriber(self.odom_topic, Odometry, self.Odome, queue_size = 10)
+        self.drive_pub = rospy.Publisher(self.drive_topic, AckermannDriveStamped, queue_size = 10 )
 
-        self.marker_pub = rospy.Publisher('/marker', Marker, queue_size=10)
+        self.marker_pub = rospy.Publisher(self.marker_topic, Marker, queue_size=10)
 
         self.mode = 0
 
@@ -90,17 +106,6 @@ class ODGPF:
         self.lap_time_flag = True
         self.lap_time_start = 0
         self.lap_time = 0
-
-        self.logging_idx = 0
-        self.logging_flag = rospy.get_param('logging', False)
-        self.trj_path = rospy.get_param('trj_path',"/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv")
-        self.closest_obs_dist = 0
-        self.closest_wp_dist = 0
-        self.logger_switch()
-    
-    def logger_switch(self):
-        if self.logging_flag:
-            self.trajectory = open(self.trj_path,'w')    
 
     def getDistance(self, a, b):
         dx = a[0] - b[0]
@@ -121,16 +126,6 @@ class ODGPF:
         
         return tf_point
 
-    def trajectory_logging(self):
-        
-        if self.logging_idx < self.wp_index_current and self.logging_flag:
-            self.trajectory.write(f"{self.current_position[0]},{self.current_position[1]},{self.current_position[2]},{self.closest_obs_dist},{self.closest_wp_dist},{self.current_speed}\n")
-            self.logging_idx += 1
-        elif self.logging_idx == self.wp_num and self.logging_flag:
-            pass
-        else:
-            pass
-    
     def xyt2rt(self, origin):
         rtpoint = []
 
@@ -144,15 +139,22 @@ class ODGPF:
         return rtpoint
 
     def get_waypoint(self):
-        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter ,dtype='float')
-        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/vegas_paper.csv',delimiter=',',dtype='float')
+        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')
+        # params.yaml 파일 수정 부탁드립니다... 제발...
+        """
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas_test.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_obsmap1.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_obsmap2.csv',delimiter=',',dtype='float')
+        file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_curve.csv',delimiter=',',dtype='float')
         # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_floor8.csv',delimiter=',',dtype='float')
+        """
         temp_waypoint = []
         for i in file_wps:
             wps_point = [i[0],i[1],0]
             temp_waypoint.append(wps_point)
             self.wp_num += 1
-        #print("wp_num",self.wp_num)
+        # print("wp_num",self.wp_num)
         return temp_waypoint
 
     def find_desired_wp(self):
@@ -160,7 +162,7 @@ class ODGPF:
         self.nearest_distance = self.getDistance(self.waypoints[wp_index_temp], self.current_position)
 
         _vel = self.current_speed
-        self.LOOK = 0.5 + (0.3 * _vel)
+        self.LOOK = 1.5 + (0.3 * _vel)
         
         while True:
             wp_index_temp+=1
@@ -191,11 +193,36 @@ class ODGPF:
         transformed_nearest_point = self.transformPoint(self.current_position, self.waypoints[idx_temp])
         self.desired_wp_rt = self.xyt2rt(transformed_nearest_point)
 
+        self.idx_temp = idx_temp
+        marker = Marker()
+        marker.header.frame_id = "map"
+        marker.header.stamp = rospy.Time.now()
+        marker.ns = "mpc"
+        marker.id = 2
+        marker.type = marker.CUBE
+        marker.action = marker.ADD
+        marker.pose.position.x = self.waypoints[self.idx_temp][0]
+        marker.pose.position.y = self.waypoints[self.idx_temp][1]
+        marker.pose.position.z = 0.1
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.2
+        marker.scale.y = 0.2
+        marker.scale.z = 0.1
+        marker.color.a = 1.0
+        marker.color.r = 1.0
+        marker.color.g = 0.0
+        marker.color.b = 0.0
+        # print(self.waypoints[self.idx_temp], self.idx_temp)
+        self.marker_pub.publish(marker)
+
     def define_obstacles(self, scan):
         obstacles = []
         
         i = self.detect_range_s
-
+        d_i = 0
         while True:
             if (i >= self.detect_range_e):
                 break
@@ -219,9 +246,14 @@ class ODGPF:
                 if scan[i] < self.THRESHOLD:
                     i += 1   
                 end_idx_temp = i
+                
+                # print('start:', start_idx_temp,'end:',end_idx_temp, end=" ")
+
 
                 distance_obstacle = end_temp/obstacle_count
-                a_k = ((max_temp - distance_obstacle)*np.exp(1/4))
+                
+                
+                a_k = ((self.THRESHOLD - distance_obstacle)*np.exp(1/2))
 
                 angle_obstacle = (end_idx_temp - start_idx_temp)*self.interval
 
@@ -231,10 +263,16 @@ class ODGPF:
                 angle_obstacle_center = angle_obstacle_center - self.front_idx
 
                 obstacle_inf = [angle_obstacle_center, sigma_obstacle, a_k]
-                #print('obstacle', obstacle_imf)
+                
+                # print('angle_center',angle_obstacle_center,end=' ')
+                print(sigma_obstacle)
                 obstacles.append(obstacle_inf)
-
+        
+            
             i += 1
+
+        # print(len(obstacles))
+        # print()
 
         return obstacles
 
@@ -242,8 +280,11 @@ class ODGPF:
 
         f_rep_list = [0]*self.scan_range # np.zeros(self.scan_range)
         for i in range(len(obstacles)):
-            for j in range(self.detect_range_s, self.detect_range_e):
+            for j in range(self.detect_range_s, self.front_idx):
                 f_rep_list[j] += obstacles[i][2] * np.exp((-0.5)*((((j-self.front_idx)*self.interval - obstacles[i][0]*self.interval)**2) / (obstacles[i][1])**2))
+            
+            for k in range(self.detect_range_e, self.front_idx-1,-1):
+                f_rep_list[k] += obstacles[i][2] * np.exp((-0.5)*((((k-self.front_idx)*self.interval - obstacles[i][0]*self.interval)**2) / (obstacles[i][1])**2))
 
         self.f_rep_list = f_rep_list
         
@@ -308,6 +349,7 @@ class ODGPF:
             # set_speed = 0
             set_speed = self.current_speed - np.fabs((maximum_speed - self.current_speed) * 0.2)
 
+
         return set_speed
 
     def main_drive(self, goal):
@@ -315,10 +357,16 @@ class ODGPF:
         self.steering_angle = (-self.front_idx+goal)*self.interval
 
         controlled_angle = self.steering_angle
+
         if controlled_angle == 0.0:
             controlled_angle = 0.001
-        path_radius = self.LOOK**2 / (2 * np.sin(controlled_angle))
+
+        # LOOK : 0.5 + (0.3 * _vel)   (장애물 or 곡선 part) == 2
+        # LOOK이 path_radius에 끼치는 영향
+        # -> LOOK이 클수록 스티어링 앵글을 덜꺾음 
+        path_radius = self.LOOK**1.75 / (2 * np.sin(controlled_angle))
         steering_angle = np.arctan(self.ROBOT_LENGTH / path_radius)
+        # print("input",controlled_angle,"output",steering_angle)
 
         self.set_speed = self.speed_controller() # determin_speed
 
@@ -427,37 +475,21 @@ class ODGPF:
                         else: break
                     else: break
                     j += 1
-                
-    def find_nearest_obs(self,obs):
-        min_di = 0
-        min_dv = 0
-        if len(obs) <= 1 :
-            min_di = 20
-            min_dv = 20
-        else:
-            min_di = self.getDistance(self.current_position, obs[0])
-            for i in range(len(obs)):
-                _dist = self.getDistance(self.current_position,obs[i])
-                if _dist <= min_di:
-                    min_di = _dist
-                    min_dv = self.getDistance(self.waypoints[self.wp_index_current], obs[i])
-        
-        self.closest_obs_dist = min_di
-        self.closest_wp_dist = min_dv
-
 
     def driving(self):
+        loop = 0
         rate = rospy.Rate(self.RATE)
+        tn = time.time()
         self.start = time.time()
-        self.s1 = [0]*750
-        self.s2 = [0]*750
-        self.s3 = [0]*750
-        self.s = np.arange(750)
+        # self.s1 = [0]*750
+        # self.s2 = [0]*750
+        # self.s3 = [0]*750
+        # self.s = np.arange(750)
 
         #speed monitoring
-        self.b1 = [0]*750
-        self.b2 = [0]*750
-        self.b = np.arange(750)
+        # self.b1 = [0]*750
+        # self.b2 = [0]*750
+        # self.b = np.arange(750)
         
         self.c1 = [0]*(self.detect_range*self.detect_n)
         self.c2 = [0]*(self.detect_range*self.detect_n)
@@ -469,42 +501,49 @@ class ODGPF:
             i += 1
 
             if self.scan_range == 0: continue
-            
+            tn0 = time.time()
+            loop += 1
+
             obstacles = self.define_obstacles(self.scan_filtered)
-            # print(len(obstacles))
-            self.find_nearest_obs(obstacles)
+            #print(len(obstacles))
             rep_list = self.rep_field(obstacles)
             att_list = self.att_field(self.desired_wp_rt)
             total_list = self.total_field(rep_list, att_list)
 
             desired_angle = total_list#self.angle(total_list)
             self.main_drive(desired_angle)
-
-            self.trajectory_logging()
+            
+            tn1 = time.time()
+            """
+                tn:  initinalize Time
+                tn0: driving loop start Time
+                tn1: driving loop final Time
+            """
+            self.time_data_writer.writerow([loop, tn1-tn, tn1-tn0])
             if i % 10 == 0:
-                del self.s1[0]
-                del self.s2[0]
-                del self.s3[0]
+                # del self.s1[0]
+                # del self.s2[0]
+                # del self.s3[0]
                 
-                del self.b1[0]
-                del self.b2[0]
+                # del self.b1[0]
+                # del self.b2[0]
                 
                 del self.c1[0:self.detect_range]
                 del self.c2[0:self.detect_range]
                 del self.c3[0:self.detect_range]
 
-                self.s1.append(self.f_total_list[total_list])
-                self.s2.append(att_list[total_list])
-                self.s3.append(rep_list[total_list])
+                # self.s1.append(self.f_total_list[total_list])
+                # self.s2.append(att_list[total_list])
+                # self.s3.append(rep_list[total_list])
 
-                self.b1.append(self.current_speed)
-                self.b2.append(self.set_speed)
+                # self.b1.append(self.current_speed)
+                # self.b2.append(self.set_speed)
 
                 self.c1 = self.c1 + self.f_total_list[self.detect_range_s:self.detect_range_e][::-1]
                 self.c2 = self.c2 + att_list[self.detect_range_s:self.detect_range_e][::-1]
                 self.c3 = self.c3 + rep_list[self.detect_range_s:self.detect_range_e][::-1]
 
-                # # ####################
+                # # # ####################
                 # plt.subplot(1,1,1)
                 # plt.plot(self.c,self.c1,color = 'black', label ='total field',linewidth=3.0)
                 # plt.xticks([self.detect_range*0,self.detect_range*1,self.detect_range*2,self.detect_range*3,self.detect_range*4,self.detect_range*self.detect_n])
@@ -528,16 +567,13 @@ class ODGPF:
                 # plt.pause(0.001)
                 # plt.clf()
                 # print(self.steering_angle_past)
-                # # ##################
+                # # # ##################
    
 
             rate.sleep()
-        
-        if self.logging_flag:
-            self.trajectory.close()
 
 if __name__ == '__main__':
-    rospy.init_node("test")
+    rospy.init_node("driver_odg_pf")
     A = ODGPF()
     A.driving()
     rospy.spin()
