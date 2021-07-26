@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-wpt_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/map/wp_vegas.csv"
-=======
 wpt_path: "/home/nvidia/f1tenth_ws/src/car_duri/map/floor_8020.csv" # Locate waypoints(csv) files real path 
->>>>>>> eac6ff791d05f69ffcbc7c921e882185005372ec
 wpt_delimeter: ","
 trj_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
 logging: True
