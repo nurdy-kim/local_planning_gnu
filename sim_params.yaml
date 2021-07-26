@@ -3,10 +3,10 @@ odom_topic: /odom
 scan_topic: /scan
 marker_topic: /marker
 
-wpt_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/map/wp_obsmap1.csv" # Locate waypoints(csv) files real path 
+wpt_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/map/wp_obsmap2.csv" # Locate waypoints(csv) files real path 
 wpt_delimeter: ","
 
-time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record/obstacle_1"
+time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record/obstacle_2"
 
 trj_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
 logging: True
