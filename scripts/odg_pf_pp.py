@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from queue import Queue
 import math
 import time
+import csv
 #from multiprocessing import Process, Queue
 
 from sensor_msgs.msg import LaserScan
@@ -58,6 +59,11 @@ class global_pure(threading.Thread):
 
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
+
+        self.time_data_file_name = "odg_pf_pp_time_data"
+        self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_gnu_time_data.csv")
+        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
+        self.time_data_writer = csv.writer(self.time_data)
 
         self.trj_path = rospy.get_param("trj_path", "")
         self.time_data_path = rospy.get_param("time_data_path", "")
@@ -108,6 +114,10 @@ class global_pure(threading.Thread):
             self.desired_wp_rt = sensor_data[2]
             self.actual_lookahead = sensor_data[3]
 
+            self.t_loop = sensor_data[4][0]
+            self.tn0 = sensor_data[4][1]
+            self.tn1 = sensor_data[4][2]
+
             self.find_path()
             steer  = self.setSteeringAngle()
             # speed = self.setSpeed_PossibleMaximumTest()
@@ -118,6 +128,8 @@ class global_pure(threading.Thread):
             # if self.main_q.full():
             #     self.main_q.get()
             self.main_q.put(ackermann)
+            self.tn2 = time.time()
+            self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1)])
             # print("global")
             rate.sleep()
     
@@ -200,6 +212,11 @@ class local_fgm(threading.Thread):
         self.FILTER_SCALE = 1.1
         self.scan_range = 0
         self.desired_wp_rt = [0,0]
+
+        self.time_data_file_name = "odg_pf_pp_time_data"
+        self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_gnu_time_data.csv")
+        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
+        self.time_data_writer = csv.writer(self.time_data)
 
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
@@ -285,6 +302,10 @@ class local_fgm(threading.Thread):
             self.actual_lookahead = sensor_data[3]
             if self.scan_range == 0: continue
             # print("output",sensor_data[0][4])
+
+            self.t_loop = sensor_data[4][0]
+            self.tn0 = sensor_data[4][1]
+            self.tn1 = sensor_data[4][2]
             
             obstacles = self.define_obstacles(self.scan_origin)
             #print(len(obstacles))
@@ -298,6 +319,10 @@ class local_fgm(threading.Thread):
             speed = self.speed_controller()
             ackermann = [speed, steer]
             self.main_q.put(ackermann)
+            
+            self.tn2 = time.time()
+            self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1)])
+            
             # print("local")
 
             if i % 10 == 0:
@@ -797,26 +822,32 @@ class Obstacle_detect(threading.Thread):
                 break
                 
     def run(self):
+        t0 = time.time()
+        loop = 0
+
         rate = rospy.Rate(self.RATE)
         while not rospy.is_shutdown():
             if self.scan_range == 0: continue
+            loop += 1
+
             self.obs_dect()
 
             self.find_nearest_wp()
             self.get_lookahead_desired()
             self.find_desired_wp()
+            t1 = time.time()
             if self.obs:
                 self.transformed_desired_point = self.transformPoint(self.current_position, self.desired_point)
                 self.transformed_desired_point = self.xyt2rt(self.transformed_desired_point)
             # self.transformed_desired_point = self.xyt2rt(self.transformed_desired_point)
-                sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead]
+                sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead, [loop, t0, t1]]
                 # if self.local_od_q.full():
                 #     self.local_od_q.get()
                 self.local_od_q.put(sensor_data)
             else:
                 self.transformed_desired_point = self.transformPoint(self.current_position, self.desired_point)
             # self.transformed_desired_point = self.xyt2rt(self.transformed_desired_point)
-                sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead]
+                sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead, [loop, t0, t1]]
                 if self.global_od_q.full():
                     self.global_od_q.get()
                 self.global_od_q.put(sensor_data)

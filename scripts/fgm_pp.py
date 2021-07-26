@@ -250,6 +250,7 @@ class local_fgm(threading.Thread):
             self.desired_wp_rt = sensor_data[2]
             self.front_idx = int(self.scan_range / 2)
             self.actual_lookahead = sensor_data[3]
+
             self.t_loop = sensor_data[4][0]
             self.tn0 = sensor_data[4][1]
             self.tn1 = sensor_data[4][2]
