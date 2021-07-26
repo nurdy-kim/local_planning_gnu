@@ -49,7 +49,6 @@ class ODGPF:
         self.trj_path = rospy.get_param('trj_path', '')
         self.time_data_path = rospy.get_param('time_data_path', '')
 
-        
         self.front_idx = 539
         self.detect_range_s = 299
         self.detect_range_e = 779
@@ -112,6 +111,7 @@ class ODGPF:
         self.logging_idx = 0
         self.closest_obs_dist = 0
         self.closest_wp_dist = 0
+        self.race_time = 0
 
         if self.tr_flag:
             self.trajectory = open(self.trj_path,'w')
@@ -124,13 +124,16 @@ class ODGPF:
         return np.sqrt(dx**2 + dy**2)
 
     def trajectory_logging(self):
+        self.race_time = time.time() - self.start
         if self.logging_idx <= self.wp_index_current:
+            self.trajectory.write(f"{self.race_time},")
             self.trajectory.write(f"{self.current_position[0]},")
             self.trajectory.write(f"{self.current_position[1]},")
             self.trajectory.write(f"{self.current_position[2]},")
             self.trajectory.write(f"{self.closest_obs_dist},")
             self.trajectory.write(f"{self.closest_wp_dist},")
             self.trajectory.write(f"{self.current_speed}\n")
+            
             self.logging_idx += 1
         else:
             pass
@@ -559,7 +562,8 @@ class ODGPF:
                 tn1: driving loop final Time
             """
             self.time_data_writer.writerow([loop, tn1-tn, tn1-tn0])
-            self.trajectory_logging()
+            if self.tr_flag:
+                self.trajectory_logging()
             if i % 10 == 0:
                 # del self.s1[0]
                 # del self.s2[0]
