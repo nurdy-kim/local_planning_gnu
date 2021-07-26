@@ -11,8 +11,6 @@ time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record"
 trj_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
 logging: True
 
-time_data_path: ""
-
 max_speed: 20.0
 min_speed: 01.5
 rate: 100
