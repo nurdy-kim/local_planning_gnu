@@ -42,7 +42,6 @@ class FGM:
 
         self.time_data_file_name = "fgm_gnu_time_data"
         self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_gnu_time_data.csv")
-        print(f"{self.time_data_path}/{self.time_data_file_name}.csv")
         self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
         self.time_data_writer = csv.writer(self.time_data)
 
