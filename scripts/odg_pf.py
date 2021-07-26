@@ -80,7 +80,7 @@ class ODGPF:
 
         self.current_position = [0,0,0]
         self.interval = 0.00435
-        self.gamma = 0.8
+        self.gamma = 1.5
         #self.a_k = 1.2
         self.current_speed = 1.0
         self.set_speed = 0.0
@@ -406,7 +406,7 @@ class ODGPF:
         # LOOK : 0.5 + (0.3 * _vel)   (장애물 or 곡선 part) == 2
         # LOOK이 path_radius에 끼치는 영향
         # -> LOOK이 클수록 스티어링 앵글을 덜꺾음 
-        path_radius = self.LOOK**1.75 / (2 * np.sin(controlled_angle))
+        path_radius = self.LOOK**1.25 / (2 * np.sin(controlled_angle))
         steering_angle = np.arctan(self.ROBOT_LENGTH / path_radius)
         # print("input",controlled_angle,"output",steering_angle)
 
@@ -587,7 +587,7 @@ class ODGPF:
                 self.c2 = self.c2 + att_list[self.detect_range_s:self.detect_range_e][::-1]
                 self.c3 = self.c3 + rep_list[self.detect_range_s:self.detect_range_e][::-1]
 
-                # # # ####################
+                # # ####################
                 # plt.subplot(1,1,1)
                 # plt.plot(self.c,self.c1,color = 'black', label ='total field',linewidth=3.0)
                 # plt.xticks([self.detect_range*0,self.detect_range*1,self.detect_range*2,self.detect_range*3,self.detect_range*4,self.detect_range*self.detect_n])
@@ -611,7 +611,7 @@ class ODGPF:
                 # plt.pause(0.001)
                 # plt.clf()
                 # print(self.steering_angle_past)
-                # # # ##################
+                # # ##################
    
         
             rate.sleep()
