@@ -1,0 +1,24 @@
+drive_topic: /drive
+odom_topic: /odom
+scan_topic: /scan
+marker_topic: /marker
+
+wpt_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/map/wp_vegas.csv" # Locate waypoints(csv) files real path 
+wpt_delimeter: ","
+
+time_data_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/record"
+
+trj_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
+logging: True
+
+max_speed: 20.0
+min_speed: 01.5
+rate: 100
+
+robot_length: 0.325
+robot_scale: 0.25
+mass: 3.47
+
+mu: 0.523
+pi: 3.141592
+g: 9.81

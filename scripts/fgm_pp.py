@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from queue import Queue
 import math
 import time
+import csv
 #from multiprocessing import Process, Queue
 
 from sensor_msgs.msg import LaserScan
@@ -23,13 +24,14 @@ class maindrive(threading.Thread):
         self.main_q = main_q
         self.RATE = 100
         self.ackermann_data = AckermannDriveStamped()
-        self.drive_pub = rospy.Publisher("/ICE/drive", AckermannDriveStamped, queue_size=10)
+        self.drive_topic = rospy.get_param("drive_topic", "/drive")
+        self.drive_pub = rospy.Publisher(self.drive_topic, AckermannDriveStamped, queue_size=10)
 
     def run(self):
         obstacle=False 
         rate = rospy.Rate(self.RATE)
 
-        while not rospy.is_shutdown():
+        while True:
             #if self.scan_range == 0: continue
             ackermann = self.main_q.get()
             self.ackermann_data.drive.steering_angle = ackermann[1]
@@ -60,6 +62,11 @@ class global_pure(threading.Thread):
         self.MU = rospy.get_param('mu', 0.523)
         self.MASS = rospy.get_param('mass', 3.47)
         self.RATE = rospy.get_param('rate', 100)
+
+        self.time_data_file_name = "fgm_pp_time_data"
+        self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_gnu_time_data.csv")
+        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
+        self.time_data_writer = csv.writer(self.time_data)
     
         self.wp_index_current = 0
         self.current_position = [0]*3
@@ -100,6 +107,10 @@ class global_pure(threading.Thread):
             self.scan_filtered = sensor_data[1][2]
             self.desired_wp_rt = sensor_data[2]
             self.actual_lookahead = sensor_data[3]
+            
+            self.t_loop = sensor_data[4][0]
+            self.tn0 = sensor_data[4][1]
+            self.tn1 = sensor_data[4][2]
 
             self.find_path()
             steer  = self.setSteeringAngle()
@@ -111,7 +122,10 @@ class global_pure(threading.Thread):
             # if self.main_q.full():
             #     self.main_q.get()
             self.main_q.put(ackermann)
-            print("global")
+            # print("global")
+            self.tn2 = time.time()
+            self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1)])
+            # print("local execution time:", time.time() - self.t1)
             rate.sleep()
     
     def find_path(self):
@@ -187,6 +201,11 @@ class local_fgm(threading.Thread):
         self.PI = rospy.get_param('pi', 3.141592)
         self.GRAVITY_ACC = rospy.get_param('g', 9.81)
 
+        self.time_data_file_name = "fgm_pp_time_data"
+        self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_gnu_time_data.csv")
+        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
+        self.time_data_writer = csv.writer(self.time_data)
+
         self.interval = 0.00435
         self.scan_range = 0
         self.front_idx = 0
@@ -213,6 +232,8 @@ class local_fgm(threading.Thread):
         self.idx_save = 0
 
         self.dmin_past = 0
+        self.lap_time_flag = True
+
 
     def run(self):
         rate = rospy.Rate(self.RATE)
@@ -229,13 +250,23 @@ class local_fgm(threading.Thread):
             self.desired_wp_rt = sensor_data[2]
             self.front_idx = int(self.scan_range / 2)
             self.actual_lookahead = sensor_data[3]
+
+            self.t_loop = sensor_data[4][0]
+            self.tn0 = sensor_data[4][1]
+            self.tn1 = sensor_data[4][2]
+
+        
             
-            print(sensor_data[1])
+            #print(sensor_data[1])
             self.find_gap(self.scan_filtered)
             self.for_find_gap(self.scan_filtered)
             gap = self.find_best_gap(self.desired_wp_rt)
             self.main_drive(gap)
-            print("local")
+
+            self.tn2 = time.time()
+            self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1)])
+            # print("local execution time:", time.time() - self.tn1)
+            # print("local")
             #rate.sleep()
 
 
@@ -331,7 +362,7 @@ class local_fgm(threading.Thread):
                     temp_distance = 0
                     distance = 0
                     gap_idx = i
-                    #self.gaps[i][2] = ref_idx
+                    # self.gaps[i][2] = ref_idx
                     break
                 i += 1
             #가장 작은 distance를 갖는 gap만 return
@@ -400,12 +431,13 @@ class local_fgm(threading.Thread):
         if dmin == 0:
             dmin = self.dmin_past
 
-        controlled_angle = ( (self.GAP_THETA_GAIN/dmin)*self.max_angle + self.REF_THETA_GAIN*self.wp_angle)/(self. GAP_THETA_GAIN/dmin + self.REF_THETA_GAIN) 
+        controlled_angle = ((self.GAP_THETA_GAIN/dmin)*self.max_angle + self.REF_THETA_GAIN*self.wp_angle)/(self. GAP_THETA_GAIN/dmin + self.REF_THETA_GAIN) 
         distance = 1.0
         #path_radius = 경로 반지름 
         path_radius = distance / (2*np.sin(controlled_angle))
         #
         steering_angle = np.arctan(self.RACECAR_LENGTH/path_radius)
+
         # controlled_angle = self.max_angle
         # if controlled_angle == 0.0:
         #     controlled_angle = 0.001
@@ -436,6 +468,9 @@ class Obstacle_detect(threading.Thread):
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
 
+        self.odom_topic = rospy.get_param("odom_topic", "/odom")
+        self.scan_topic = rospy.get_param("scan_topic", "/scan")
+
         self.interval = 0.00435
         self.scan_range = 0
         self.front_idx = 0
@@ -465,8 +500,8 @@ class Obstacle_detect(threading.Thread):
         self.actual_lookahead = 0
         self.current_speed = 0
 
-        rospy.Subscriber('/ICE/scan', LaserScan, self.subCallback_od, queue_size=10)
-        rospy.Subscriber('/ICE/odom', Odometry, self.Odome, queue_size = 10)
+        rospy.Subscriber(self.scan_topic, LaserScan, self.subCallback_od, queue_size=10)
+        rospy.Subscriber(self.odom_topic, Odometry, self.Odome, queue_size = 10)
     
     def Odome(self, odom_msg):
         # print("11")
@@ -528,10 +563,15 @@ class Obstacle_detect(threading.Thread):
         self.lookahead_desired = 0.5 + (0.3 * _vel)
     
     def get_waypoint(self):
-        #file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
-        # file_wps = np.genfromtxt('/home/lab/f1tenth_ws/src/car_duri/wp_vegas.csv', delimiter=',', dtype='float')
-        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')
-    
+        file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')      
+        # params.yaml 파일 수정 부탁드립니다... 제발...
+        """
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_obsmap2.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas_test.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_floor8.csv',delimiter=',',dtype='float')
+        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_curve.csv',delimiter=',',dtype='float')
+        """
         temp_waypoint = []
         for i in file_wps:
             wps_point = [i[0],i[1],0]
@@ -683,41 +723,48 @@ class Obstacle_detect(threading.Thread):
 
         self.obs = False
         for i in range(len(self.len_obs)):
-            if self.len_obs[i][0] > 600 or self.len_obs[i][1] < 480:
+            if self.len_obs[i][0] > 680 or self.len_obs[i][1] < 400:
                 self.obs = False
             else:
                 self.obs= True
                 break
                 
     def run(self):
+        t0 = time.time() # init time 
+        loop = 0
+
         rate = rospy.Rate(self.RATE)
         while not rospy.is_shutdown():
             if self.scan_range == 0: continue
+            loop += 1
+            
             self.obs_dect()
 
             self.find_nearest_wp()
             self.get_lookahead_desired()
             self.find_desired_wp()
+            t1 = time.time()
             # self.obs= True
             if self.obs:
                 self.transformed_desired_point = self.transformPoint(self.current_position, self.desired_point)
                 self.transformed_desired_point = self.xyt2rt(self.transformed_desired_point)
             # self.transformed_desired_point = self.xyt2rt(self.transformed_desired_point)
-                sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead]
-                # if self.local_od_q.full():
-                #     self.local_od_q.get()
+                sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead, [loop, t0, t1]]
+                if self.local_od_q.full():
+                    self.local_od_q.get()
                 self.local_od_q.put(sensor_data)
             else:
                 self.transformed_desired_point = self.transformPoint(self.current_position, self.desired_point)
             # self.transformed_desired_point = self.xyt2rt(self.transformed_desired_point)
-                sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead]
+                sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead, [loop, t0, t1]]
                 if self.global_od_q.full():
                     self.global_od_q.get()
                 self.global_od_q.put(sensor_data)
             rate.sleep()
 
 if __name__ == '__main__':
-    rospy.init_node("test")
+    rospy.init_node("driver_fgm_pp")
+
     global_od_q = Queue(1)
     local_od_q = Queue(1)
     main_q = Queue(1)

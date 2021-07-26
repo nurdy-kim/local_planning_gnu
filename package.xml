@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>car_duri</name>
+  <name>local_planning_gnu</name>
   <version>0.0.0</version>
   <description>The local_gnu package</description>
 

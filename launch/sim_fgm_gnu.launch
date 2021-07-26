@@ -1,0 +1,9 @@
+<launch>
+
+    <include file="$(find f1tenth_gym_ros)/launch/gym_bridge_host.launch" />
+    <rosparam command="load" file="$(find local_planning_gnu)/sim_params.yaml" />
+    <node name="Carminator" pkg="local_planning_gnu" type="fgm_gnu.py" output="screen">
+
+    </node>
+
+</launch>
