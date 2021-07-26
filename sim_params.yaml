@@ -3,12 +3,12 @@ odom_topic: /odom
 scan_topic: /scan
 marker_topic: /marker
 
-wpt_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/map/wp_vegas.csv" # Locate waypoints(csv) files real path 
+wpt_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/map/wp_curve.csv" # Locate waypoints(csv) files real path 
 wpt_delimeter: ","
 
-time_data_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/record"
+time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record/curve"
 
-trj_path: "/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
+trj_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
 logging: True
 
 max_speed: 20.0

@@ -12,7 +12,7 @@ class logger:
         self.tr = np.genfromtxt('/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv',delimiter=',')
 
         self.wp_list = self.wp[:,:2]
-        self.tr_list = self.tr[:,:2]
+        self.tr_list = self.tr[:,1:3]
         self.pub1 = rospy.Publisher("waypoint_array", MarkerArray,queue_size=1)
         self.pub2 = rospy.Publisher("trajectory_array",MarkerArray, queue_size=1)
         self.wpArray = MarkerArray()
@@ -93,7 +93,7 @@ class logger:
     def calc_FR(self):
         # To Calculation FR 
         N = len(self.wp)
-        theta_i = self.tr[:,2]
+        theta_i = self.tr[:,3]
         theta_v = self.calc_theta()
 
         div_u = 0
@@ -109,8 +109,8 @@ class logger:
         return FR
     
     def calc_DR(self):
-        di_list = self.tr[:,3]
-        dv_list = self.tr[:,4]
+        di_list = self.tr[:,4]
+        dv_list = self.tr[:,5]
         N = len(di_list)
         sum_dr = 0
         for i in range(N):
@@ -149,13 +149,23 @@ class logger:
     
     def calc_comfort(self):
         comfort_score = 0
+        t = self.tr[:,0]
+        acc = self.calc_acc()
+        ax = []
+        ay = []
+        for i in range(len(acc)-1):
+            d_time = t[i+1] - t[i]
+            d_vertical = acc[i+1][0] - acc[i][0] 
+            d_horizontal = acc[i+1][1] - acc[i][1]
+            
+            ax.append(d_vertical / d_time)
+            ay.append(d_horizontal / d_time)
 
-        ax = self.tr[:,5]
-        aw_x = np.average(ax)
-        # ay = self.tr[:,6]
-        # aw_y = np.average(ay)
-        final_aw = np.sqrt(self.weighted_RMS_k[0]**2 * aw_x)
-        print(final_aw)
+        awx = np.mean(ax)
+        awy = np.mean(ay)
+
+        final_aw = np.sqrt(self.weighted_RMS_k[0]**2 * awx + self.weighted_RMS_k[1]**2 * awy)
+        
         if final_aw < 0.315:
             comfort_score = 10
         elif final_aw < 0.63:
@@ -170,7 +180,27 @@ class logger:
             comfort_score = 0
         
         return comfort_score
+    
+    def calc_acc(self):
+        v = self.tr[:,6]
+        theta = self.tr[:,3]
+        acc = []
 
+        for i in range(len(v)-1):
+            v1 = v[i]
+            v2 = v[i+1]
+            theta1 = theta[i]
+            theta2 = theta[i+1]
+
+            v_vertical = (np.fabs(v1)*np.fabs(v2)*np.cos(theta2-theta1))
+            v_horizontal = (np.fabs(v1)*np.fabs(v2)*np.sin(theta2-theta1))
+
+            acc.append([v_vertical,v_horizontal])
+        
+        print(len(acc))
+        return acc
+
+    
     def run(self):
         while not rospy.is_shutdown():
             self.pub1.publish(self.wpArray)

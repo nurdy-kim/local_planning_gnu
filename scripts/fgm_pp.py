@@ -124,7 +124,7 @@ class global_pure(threading.Thread):
             self.main_q.put(ackermann)
             # print("global")
             self.tn2 = time.time()
-            self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1)])
+            self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1), "gp"])
             # print("local execution time:", time.time() - self.t1)
             rate.sleep()
     
@@ -264,7 +264,7 @@ class local_fgm(threading.Thread):
             self.main_drive(gap)
 
             self.tn2 = time.time()
-            self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1)])
+            self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1), "lp"])
             # print("local execution time:", time.time() - self.tn1)
             # print("local")
             #rate.sleep()
@@ -737,13 +737,13 @@ class Obstacle_detect(threading.Thread):
         while not rospy.is_shutdown():
             if self.scan_range == 0: continue
             loop += 1
+            t1 = time.time()
             
             self.obs_dect()
 
             self.find_nearest_wp()
             self.get_lookahead_desired()
             self.find_desired_wp()
-            t1 = time.time()
             # self.obs= True
             if self.obs:
                 self.transformed_desired_point = self.transformPoint(self.current_position, self.desired_point)
