@@ -82,6 +82,7 @@ class FGM:
         
         self.current_speed = 5.0
         self.dmin_past = 0
+        self.lap = 0
 
         rospy.Subscriber("/race_info", RaceInfo, self.update_race_info, queue_size = 10)
         rospy.Subscriber(self.scan_topic, LaserScan, self.subCallback_scan, queue_size = 10)
@@ -397,7 +398,7 @@ class FGM:
         if self.current_speed <= maximum_speed:
             # ACC
             if self.current_speed >= 10:
-                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed))
+                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed)*0.8)
             else:
                 set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * self.ROBOT_LENGTH)
         else:

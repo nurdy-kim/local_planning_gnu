@@ -102,7 +102,7 @@ class global_pure(threading.Thread):
 
     def run(self):
         rate = rospy.Rate(self.RATE)
-        while not rospy.is_shutdown():
+        while True:
             sensor_data = self.global_od_q.get()
             
 
@@ -179,9 +179,9 @@ class global_pure(threading.Thread):
         if self.current_speed <= maximum_speed:
             # ACC
             if self.current_speed >= 10:
-                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * 0.7)
+                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * 0.8)
             else:
-                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * 0.5)
+                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * self.RACECAR_LENGTH)
         else:
             # set_speed = 0
             set_speed = self.current_speed - np.fabs((maximum_speed - self.current_speed) * 0.2)
@@ -483,7 +483,7 @@ class local_fgm(threading.Thread):
         if self.current_speed <= maximum_speed:
             # ACC
             if self.current_speed >= 10:
-                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed))
+                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed)*0.8)
             else:
                 set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * self.ROBOT_LENGTH)
         else:
@@ -624,8 +624,8 @@ class Obstacle_detect(threading.Thread):
         marker.id = 2
         marker.type = marker.CUBE
         marker.action = marker.ADD
-        marker.pose.position.x = self.waypoints[self.idx_temp][0]
-        marker.pose.position.y = self.waypoints[self.idx_temp][1]
+        marker.pose.position.x = self.waypoints[wp_index_temp][0]
+        marker.pose.position.y = self.waypoints[wp_index_temp][1]
         marker.pose.position.z = 0.1
         marker.pose.orientation.x = 0.0
         marker.pose.orientation.y = 0.0

@@ -44,7 +44,7 @@ class ODGPF:
         self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
         self.time_data_writer = csv.writer(self.time_data)
 
-        self.waypoint_real_path = rospy.get_param('wpt_path', '../map/wp_vegas.csv')
+        self.waypoint_real_path = rospy.get_param('wpt_path', '../map/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
 
         self.trj_path = rospy.get_param('trj_path', '')
@@ -402,7 +402,7 @@ class ODGPF:
         if self.current_speed <= maximum_speed:
             # ACC
             if self.current_speed >= 10:
-                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed))
+                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed)*0.8)
             else:
                 set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * self.ROBOT_LENGTH)
         else:

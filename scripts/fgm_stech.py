@@ -75,6 +75,7 @@ class FGM:
         self.front_idx = 0
         self.theta_for = self.PI/3
         self.gap_cont = 0
+        self.lap = 0
 
         rospy.Subscriber("/race_info", RaceInfo, self.update_race_info, queue_size = 10)
         rospy.Subscriber(self.scan_topic, LaserScan, self.subCallback_scan, queue_size = 10)

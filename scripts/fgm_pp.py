@@ -65,7 +65,7 @@ class global_pure(threading.Thread):
         self.RATE = rospy.get_param('rate', 100)
 
         self.time_data_file_name = "fgm_pp_time_data"
-        self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_gnu_time_data.csv")
+        self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_pp_time_data.csv")
         self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
         self.time_data_writer = csv.writer(self.time_data)
     
@@ -171,9 +171,9 @@ class global_pure(threading.Thread):
         if self.current_speed <= maximum_speed:
             # ACC
             if self.current_speed >= 10:
-                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * 0.7)
+                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * 0.8)
             else:
-                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * 0.5)
+                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * self.RACECAR_LENGTH)
         else:
             # set_speed = 0
             set_speed = self.current_speed - np.fabs((maximum_speed - self.current_speed) * 0.2)
@@ -217,7 +217,7 @@ class local_fgm(threading.Thread):
         self.THRESHOLD = 3.0
         self.theta_for = self.PI/3
         self.for_point = 0
-        self.for_gap = [0,0,0]
+        self.for_gap = [0,0,0,0]
         self.gap_cont = 0
         self.current_position = [0]*3
         self.nearest_distance = 0
@@ -226,6 +226,8 @@ class local_fgm(threading.Thread):
         self.desired_wp_rt = [0,0]
         self.current_speed = 5.0
         self.MU = 0.523
+
+        self.lap = 0
 
         self.idx_save = 0
 
@@ -278,15 +280,15 @@ class local_fgm(threading.Thread):
 
     def find_gap(self, scan):
         self.gaps = []
-        i = 0
-        while i < self.scan_range - self.GAP_SIZE:
+        i = 340
+        while i < 740 - self.GAP_SIZE:
             if scan[i] > self.THRESHOLD:
                 start_idx_temp = i
                 end_idx_temp = i
                 max_temp = scan[i]
                 max_idx_temp = i
 
-                while ((scan[i] > self.THRESHOLD) and (i + 1 < self.scan_range)):
+                while ((scan[i] > self.THRESHOLD) and ( i+1  <  740)):
                     i += 1
                     if scan[i] > max_temp:
                         max_temp = scan[i]
@@ -295,10 +297,11 @@ class local_fgm(threading.Thread):
                     i += 1
                 end_idx_temp = i
 
-                gap_temp = [0] * 3
+                gap_temp = [0] * 4
                 gap_temp[0] = start_idx_temp
                 gap_temp[1] = end_idx_temp
                 gap_temp[2] = max_idx_temp
+                gap_temp[3] = end_idx_temp - start_idx_temp
                 self.gaps.append(gap_temp)
             i += 1
         print(self.gaps)
@@ -321,6 +324,7 @@ class local_fgm(threading.Thread):
         self.for_gap[0] = start_idx_temp
         self.for_gap[1] = end_idx_temp
         self.for_gap[2] = max_idx_temp
+        self.for_gap[3] = start_idx_temp - end_idx_temp
 
     def find_best_gap(self, ref):
         ##print(self.gaps)
@@ -335,32 +339,11 @@ class local_fgm(threading.Thread):
 
             gap_idx = 0
 
-            if self.gaps[0][0] > ref_idx:
-                distance = self.gaps[0][0] - ref_idx
-            elif self.gaps[0][1] < ref_idx:
-                distance = ref_idx - self.gaps[0][1]
-            else:
-                distance = 0
-                gap_idx = 0
-
             i = 1
             while (i < num):
-                if self.gaps[i][0] > ref_idx:
-                    temp_distance = self.gaps[i][0] - ref_idx
-                    if temp_distance < distance:
-                        distance = temp_distance
-                        gap_idx = i
-                elif self.gaps[i][1] < ref_idx:
-                    temp_distance = ref_idx - self.gaps[i][1]
-                    if temp_distance < distance:
-                        distance = temp_distance
-                        gap_idx = i
-                else:
-                    temp_distance = 0
-                    distance = 0
+                if self.gaps[i][3] > self.gaps[gap_idx][3]:
                     gap_idx = i
-                    # self.gaps[i][2] = ref_idx
-                    break
+                    
                 i += 1
             #가장 작은 distance를 갖는 gap만 return
             return self.gaps[gap_idx]
@@ -382,7 +365,7 @@ class local_fgm(threading.Thread):
         if self.current_speed <= maximum_speed:
             # ACC
             if self.current_speed >= 10:
-                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed))
+                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed)*0.8)
             else:
                 set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * self.ROBOT_LENGTH)
         else:
@@ -394,7 +377,7 @@ class local_fgm(threading.Thread):
     def main_drive(self, goal):
         # goal - [2] = max_idx,
         print(goal)
-        self.max_angle = (goal[2] - self.front_idx) * self.interval
+        self.max_angle = ((goal[0] + goal[1])/2 - self.front_idx) * self.interval
         self.wp_angle = self.desired_wp_rt[1]
 
         temp_avg = 0
