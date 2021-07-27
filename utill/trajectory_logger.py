@@ -8,8 +8,8 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 class logger:
     def __init__(self):
-        self.wp = np.genfromtxt('/home/nurdy/f1tenth_ws/src/local_planning_gnu/map/wp_vegas.csv',delimiter=',')
-        self.tr = np.genfromtxt('/home/nurdy/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv',delimiter=',')
+        self.wp = np.genfromtxt('/home/lab/f1tenth_ws/src/local_planning_gnu/map/wp_vegas_test.csv',delimiter=',')
+        self.tr = np.genfromtxt('/home/lab/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv',delimiter=',')
 
         self.wp_list = self.wp[:,:2]
         self.tr_list = self.tr[:,1:3]
