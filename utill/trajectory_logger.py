@@ -8,8 +8,8 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 class logger:
     def __init__(self):
-        self.wp = np.genfromtxt('/home/lab/f1tenth_ws/src/local_planning_gnu/map/wp_vegas_test.csv',delimiter=',')
-        self.tr = np.genfromtxt('/home/lab/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv',delimiter=',')
+        self.wp = np.genfromtxt(rospy.get_param('wpt_path'),rospy.get_param('wpt_delimeter'))
+        self.tr = np.genfromtxt(rospy.get_param('trj_path'),rospy.get_param('wpt_delimeter'))
 
         self.wp_list = self.wp[:,:2]
         self.tr_list = self.tr[:,1:3]
@@ -23,7 +23,7 @@ class logger:
         self.tr_idx_current = 0
         self.nearest_dist = 0
 
-        self.weighted_RMS_k = [1.4,1.4,1.0]
+        self.weighted_RMS_k = 1.4
 
     def marking_wp(self):
         for i in range(len(self.wp_list)):
@@ -164,16 +164,22 @@ class logger:
         awx = np.mean(ax)
         awy = np.mean(ay)
 
-        final_aw = np.sqrt(self.weighted_RMS_k[0]**2 * awx + self.weighted_RMS_k[1]**2 * awy)
+        final_aw = np.sqrt(self.weighted_RMS_k**2 * awx + self.weighted_RMS_k**2 * awy)
         
         if final_aw < 0.315:
             comfort_score = 10
-        elif final_aw < 0.63:
+        elif final_aw < 0.5:
             comfort_score = 8
-        elif final_aw <1:
+        elif final_aw <0.63:
+            comfort_score = 7
+        elif final_aw <0.8:
             comfort_score = 6
-        elif final_aw <1.6:
+        elif final_aw <1:
+            comfort_score = 5
+        elif final_aw <1.25:
             comfort_score = 4
+        elif final_aw <1.6:
+            comfort_score = 3
         elif final_aw <2.5:
             comfort_score = 2
         elif final_aw > 2.5:
