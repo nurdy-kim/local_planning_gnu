@@ -8,8 +8,11 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 class logger:
     def __init__(self):
-        self.wp = np.genfromtxt(rospy.get_param('wpt_path'),rospy.get_param('wpt_delimeter'))
-        self.tr = np.genfromtxt(rospy.get_param('trj_path'),rospy.get_param('wpt_delimeter'))
+        wpt_path = rospy.get_param('wpt_path')
+        trj_path = rospy.get_param('trj_path')
+        wpt_delimeter = rospy.get_param('wpt_delimeter')
+        self.wp = np.genfromtxt(wpt_path, delimiter=wpt_delimeter)
+        self.tr = np.genfromtxt(trj_path, delimiter=wpt_delimeter)
 
         self.wp_list = self.wp[:,:2]
         self.tr_list = self.tr[:,1:3]
@@ -203,7 +206,6 @@ class logger:
 
             acc.append([v_vertical,v_horizontal])
         
-        print(len(acc))
         return acc
 
     
@@ -212,9 +214,15 @@ class logger:
             self.pub1.publish(self.wpArray)
             self.pub2.publish(self.trArray)
             FR = self.calc_FR()
-            DR = self.calc_DR()
+            # DR = self.calc_DR()
             Comfort = self.calc_comfort()
-            print("Safety metric :",(1-FR)*DR)
+            average_speed = np.average(self.tr[:,6])
+            max_speed = np.max(self.tr[:,6])
+
+            print("laptime :",self.tr[-1,0])
+            print("average_speed :",average_speed)
+            print("max_speed :",max_speed)
+            print("Safety metric :",(1-FR))
             print("Comfort : ", Comfort)
 
             rospy.sleep(1)

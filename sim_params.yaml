@@ -6,12 +6,13 @@ marker_topic: /marker
 wpt_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/map/wp_vegas_test.csv" # Locate waypoints(csv) files real path
 wpt_delimeter: ","
 
-time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record/vegas_obs"
+time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record/vegas_test/odg_pf_pp_time_data"
+# time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record/_temp"
 
 trj_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
-logging: False
+logging: True
 
-max_speed: 7.0
+max_speed: 10.0
 min_speed: 01.5
 rate: 100
 
