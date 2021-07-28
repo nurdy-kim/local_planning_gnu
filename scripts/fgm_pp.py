@@ -482,6 +482,62 @@ class Obstacle_detect(threading.Thread):
 
         rospy.Subscriber(self.scan_topic, LaserScan, self.subCallback_od, queue_size=10)
         rospy.Subscriber(self.odom_topic, Odometry, self.Odome, queue_size = 10)
+
+        # FOR TRAJECTORY LOGGING
+        rospy.Subscriber("/race_info",RaceInfo,self.update_race_info,queue_size=10)
+        self.tr_flag = rospy.get_param('logging',False)
+        trj_path = rospy.get_param('trj_path')
+        
+        self.race_info = None
+        self.lap = 0
+
+        self.logging_idx = 0
+        self.closest_obs_dist = 0
+        self.closest_wp_dist = 0
+        self.race_time = 0
+        self.t_start = 0
+
+        if self.tr_flag:
+            self.trajectory = open(trj_path,'w')
+    
+    def update_race_info(self,race_info):
+        self.race_info = race_info
+        if self.race_info.ego_lap_count > self.lap:
+            print('lap_count',self.race_info.ego_lap_count,'elapsed_time',self.race_info.ego_elapsed_time,'collision',self.race_info.ego_collision)
+            self.lap += 1
+    
+    def trajectory_logging(self):
+        self.race_time = time.time() - self.t_start
+        if self.logging_idx <= self.wp_index_current:
+            self.trajectory.write(f"{self.race_time},")
+            self.trajectory.write(f"{self.current_position[0]},")
+            self.trajectory.write(f"{self.current_position[1]},")
+            self.trajectory.write(f"{self.current_position[2]},")
+            self.trajectory.write(f"{self.closest_obs_dist},")
+            self.trajectory.write(f"{self.closest_wp_dist},")
+            self.trajectory.write(f"{self.current_speed}\n")
+            
+            self.logging_idx += 1
+        else:
+            pass
+    
+    def find_nearest_obs(self,obs):
+        min_di = 0
+        min_dv = 0
+        if len(obs) <= 1:
+            min_di = 20
+            min_dv = 20
+        else:
+            min_di = self.getDistance(self.current_position,obs[0])
+            for i in range(len(obs)):
+                _dist = self.getDistance(self.current_position,obs[i])
+                if _dist <= min_di:
+                    min_di = _dist
+                    min_dv = self.getDistance(self.waypoints[self.wp_index_current], obs[i])
+        
+        self.closest_obs_dist = min_di
+        self.closest_wp_dist = min_dv
+
     
     def Odome(self, odom_msg):
         # print("11")
@@ -710,6 +766,7 @@ class Obstacle_detect(threading.Thread):
                 break
                 
     def run(self):
+        self.t_start = time.time()
         t0 = time.time() # init time 
         loop = 0
 
@@ -720,7 +777,11 @@ class Obstacle_detect(threading.Thread):
             t1 = time.time()
             
             self.obs_dect()
+            self.find_nearest_obs(self.scan_obs)
 
+            if self.tr_flag:
+                self.trajectory_logging()
+            
             self.find_nearest_wp()
             self.get_lookahead_desired()
             self.find_desired_wp()
@@ -741,6 +802,9 @@ class Obstacle_detect(threading.Thread):
                     self.global_od_q.get()
                 self.global_od_q.put(sensor_data)
             rate.sleep()
+        
+        if self.tr_flag:
+            self.trajectory.close()
 
 if __name__ == '__main__':
     rospy.init_node("driver_fgm_pp")
