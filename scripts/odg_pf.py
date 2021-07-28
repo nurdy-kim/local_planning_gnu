@@ -39,7 +39,7 @@ class ODGPF:
         self.scan_range = 0
         self.desired_wp_rt = [0,0]
 
-        self.time_data_file_name = "odg_pf_time_data"
+        self.time_data_file_name = "odg_pf_pp_time_data2"
         self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_stech_time_data.csv")
         self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
         self.time_data_writer = csv.writer(self.time_data)
@@ -81,7 +81,7 @@ class ODGPF:
 
         self.current_position = [0,0,0]
         self.interval = 0.00435
-        self.gamma = 1.5
+        self.gamma = 0.5
         #self.a_k = 1.2
         self.current_speed = 1.0
         self.set_speed = 0.0
@@ -134,7 +134,7 @@ class ODGPF:
         self.race_info = race_info
         
         if self.race_info.ego_lap_count > self.lap:
-            print('lap_count',self.race_info.ego_lap_count,'elapsed_time', self.race_info.elapsed_time)
+            print('lap_count',self.race_info.ego_lap_count,'elapsed_time', self.race_info.ego_elapsed_time)
             self.lap += 1
     
     def getDistance(self, a, b):
@@ -203,14 +203,7 @@ class ODGPF:
     def get_waypoint(self):
         file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')
         # params.yaml 파일 수정 부탁드립니다... 제발...
-        """
-        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas_test.csv',delimiter=',',dtype='float')
-        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_obsmap1.csv',delimiter=',',dtype='float')
-        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_obsmap2.csv',delimiter=',',dtype='float')
-        file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_curve.csv',delimiter=',',dtype='float')
-        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
-        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_floor8.csv',delimiter=',',dtype='float')
-        """
+
         temp_waypoint = []
         for i in file_wps:
             wps_point = [i[0],i[1],0]
@@ -224,8 +217,10 @@ class ODGPF:
         self.nearest_distance = self.getDistance(self.waypoints[wp_index_temp], self.current_position)
 
         _vel = self.current_speed
-        self.LOOK = 1.5 + (0.3 * _vel)
-        
+
+        #self.LOOK = 1.5 + (0.3 * _vel)
+        self.LOOK = 0.5 + (0.5 * _vel)
+
         while True:
             wp_index_temp+=1
 
@@ -629,6 +624,7 @@ class ODGPF:
    
         
             rate.sleep()
+
         if self.tr_flag:
             self.trajectory.close()
 

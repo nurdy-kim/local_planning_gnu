@@ -61,7 +61,7 @@ class global_pure(threading.Thread):
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
 
-        self.time_data_file_name = "odg_pf_pp_time_data"
+        self.time_data_file_name = "odg_pf_pp_time_data5"
         self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_gnu_time_data.csv")
         self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
         self.time_data_writer = csv.writer(self.time_data)
@@ -214,9 +214,9 @@ class local_fgm(threading.Thread):
         self.scan_range = 0
         self.desired_wp_rt = [0,0]
 
-        self.time_data_file_name = "odg_pf_pp_time_data"
+        self.time_data_file_name = "odg_pf_pp_time_data5"
         self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_gnu_time_data.csv")
-        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
+        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")             
         self.time_data_writer = csv.writer(self.time_data)
 
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')

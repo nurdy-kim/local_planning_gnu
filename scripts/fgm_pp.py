@@ -64,7 +64,7 @@ class global_pure(threading.Thread):
         self.MASS = rospy.get_param('mass', 3.47)
         self.RATE = rospy.get_param('rate', 100)
 
-        self.time_data_file_name = "fgm_pp_time_data"
+        self.time_data_file_name = "fgm_pp_time_data5"
         self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_pp_time_data.csv")
         self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
         self.time_data_writer = csv.writer(self.time_data)
@@ -199,7 +199,7 @@ class local_fgm(threading.Thread):
         self.PI = rospy.get_param('pi', 3.141592)
         self.GRAVITY_ACC = rospy.get_param('g', 9.81)
 
-        self.time_data_file_name = "fgm_pp_time_data"
+        self.time_data_file_name = "fgm_pp_time_data5"
         self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_gnu_time_data.csv")
         self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
         self.time_data_writer = csv.writer(self.time_data)
