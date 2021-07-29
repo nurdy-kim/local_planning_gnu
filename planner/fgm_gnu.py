@@ -5,21 +5,22 @@ import time
 class FGM:
     def __init__(self, params):
 
-        self.LOOK = 2.5
         self.RACECAR_LENGTH = params.robot_length
         self.ROBOT_LENGTH = params.robot_length
         self.SPEED_MAX = params.max_speed
         self.SPEED_MIN = params.min_speed
 
-        self.ROBOT_SCALE = params.robot_scale
-        self.THRESHOLD = params.threshold
-        self.GAP_SIZE = params.gap_size
-        self.FILTER_SCALE = params.filter_scale
-        self.GAP_THETA_GAIN = params.gap_theta_gain
-        self.REF_THETA_GAIN = params.ref_theta_gain
         self.MU = params.mu
         self.GRAVITY_ACC = params.g
         self.PI = params.pi
+        self.ROBOT_SCALE = params.robot_scale
+
+        self.LOOK = params.fgm['look']
+        self.THRESHOLD = params.fgm['threshold']
+        self.GAP_SIZE = params.fgm['gap_size']
+        self.FILTER_SCALE = params.fgm['filter_scale']
+        self.GAP_THETA_GAIN = params.fgm['gap_theta_gain']
+        self.REF_THETA_GAIN = params.fgm['ref_theta_gain']
 
         self.waypoint_real_path = params.wpt_path
         self.waypoint_delimeter = params.wpt_delimeter
@@ -447,7 +448,6 @@ class FGM:
         self.current_position = [odom_data['x'], odom_data['y'], odom_data['theta']]
         self.current_speed = odom_data['linear_vel']
         self.find_desired_wp()
-
 
         obstacle = self.define_obstacles(self.scan_filtered)
         self.find_nearest_obs(obstacle)
