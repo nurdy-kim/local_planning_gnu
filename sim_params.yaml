@@ -1,20 +1,18 @@
-drive_topic: /drive
-odom_topic: /odom
-scan_topic: /scan
-marker_topic: /marker
+# Environment Constants
 
-wpt_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/map/wp_vegas_test.csv" # Locate waypoints(csv) files real path
-wpt_delimeter: ","
+sx: 0
+sy: 0
+stheta: 0
 
-# time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record/vegas_test/odg_pf_pp_time_data"
-time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record/_temp"
+map_path: "map/obs1_map"
+map_ext: '.png'
 
-trj_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
-logging: True
+# Planner Constants
+wpt_path: 'map/wp_obsmap1.csv'
+wpt_delimeter: ','
 
-max_speed: 10.0
+max_speed: 7.0
 min_speed: 01.5
-rate: 100
 
 robot_length: 0.3302
 robot_scale: 0.2032
@@ -23,3 +21,10 @@ mass: 3.47
 mu: 0.523
 pi: 3.141592
 g: 9.81
+
+threshold: 3.0
+gap_size: 1
+filter_scale: 1.1
+gap_theta_gain: 20.0
+ref_theta_gain: 1.5
+

@@ -1,5 +1,0 @@
-<launch>
-    <rosparam command="load" file="$(find local_planning_gnu)/car_params.yaml" />
-    <node name="Carminator" pkg="local_planning_gnu" type="odg_pf.py" output="screen">
-    </node>
-</launch>
