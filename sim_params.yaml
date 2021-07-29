@@ -22,9 +22,17 @@ mu: 0.523
 pi: 3.141592
 g: 9.81
 
-threshold: 3.0
-gap_size: 1
-filter_scale: 1.1
-gap_theta_gain: 20.0
-ref_theta_gain: 1.5
+fgm:
+  look: 2.0
+  threshold: 3.0
+  gap_size: 1
+  filter_scale: 1.1
+  gap_theta_gain: 20.0
+  ref_theta_gain: 1.5
+
+odg:
+  threshold: 2.0
+  filter_scale: 1.1
+
+
 

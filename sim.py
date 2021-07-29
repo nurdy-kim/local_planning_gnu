@@ -5,6 +5,8 @@ import numpy as np
 from argparse import Namespace
 
 from planner.fgm_stech import FGM as FGM_STECH
+from planner.fgm_gnu import FGM as FGM_GNU
+from planner.odg_pf import ODGPF
 
 if __name__ == '__main__':
 
@@ -12,12 +14,14 @@ if __name__ == '__main__':
         conf_dict = yaml.load(file, Loader=yaml.FullLoader)
     conf = Namespace(**conf_dict)
 
+
     env = gym.make('f110_gym:f110-v0', map=conf.map_path, map_ext=conf.map_ext, num_agents=1)
     obs, step_reward, done, info = env.reset(np.array([[conf.sx, conf.sy, conf.stheta]]))
     env.render()
 
     # planner = FGM_GNU(conf)
-    planner = FGM_STECH(conf)
+    # planner = FGM_STECH(conf)
+    planner = ODGPF(conf)
 
     laptime = 0.0
     start = time.time()
