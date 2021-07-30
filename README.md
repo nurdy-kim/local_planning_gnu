@@ -1,46 +1,59 @@
 # Local Planning
 
-### Usage
+
+
+### Usage (pygame)
 ---
 
 1. Clone this repository
 
     ```
-    cd ~/catkin_ws/src # ros workspace etc) f1tenth_ws
     git clone https://github.com/nurdy-kim/local_planning_gnu
+    cd local_planning_gnu
+    git checkout pygame
     ```
 
-2. Build Catkin Workspace
 
+2. Requirements
+
+    1. Framework
     ```
-    cd ..
-    catkin_make
-    source devel/setup.bash
+    python3 3.8 or later
+    gym
+    pyyaml
+    numba
+    numpy
     ```
- 
- 3. Run
- 
-    ```
-    roslaunch local_planning_gnu [LAUNCH_FILE]
-    ```
-  
-    - `car_fgm_gnu.launch` - Run FGM_GNU on F1TENTH Racecar system
-    - `car_fgm_pp.launch` - Run FGM_PurePursuit on F1TENTH Racecar system
-    - `car_fgm_seoultech.launch` - Run FGM_SEOULTECH on F1TENTH Racecar system
-    - `car_odg_pf.launch` - Run ODG-PF on F1TENTH Racecar system
-    - `car_odg_pp.launch` - Run ODG-PurePursuit on F1TENTH Racecar system
+
+   2. F1TENTH Gym Environment
     
+    to install f1tenth_gym, follow the [Quickstart](https://github.com/f1tenth/f1tenth_gym) at f1tenth/f1tenth_gym
+
+
+3. Run
+    1. Quickstart
+    ```
+    python3 sim.py
+    ```
+    2. Choose Planner
+    ```
+    # Import class from planner/ folder.
+    from planner.fgm_stech import FGM as FGM_STECH
+    from planner.fgm_gnu import FGM as FGM_GNU
+    from planner.odg_pf import ODGPF
     
-    - `sim_fgm_gnu.launch` - Run FGM_GNU on F1TENTH Gym ROS simulator system
-    - `sim_fgm_pp.launch` - Run FGM_PurePursuit on F1TENTH Gym ROS simulator system
-    - `sim_fgm_seoultech.launch` - Run FGM_SEOULTECH on F1TENTH Gym ROS simulator system
-    - `sim_odg_pf.launch` - Run ODG-PF on F1TENTH Gym ROS simulator system
-    - `sim_odg_pp.launch` - Run ODG-PurePursuit on F1TENTH Gym ROS simulator system
+    ...
+    
+    # choose you want 
+    # planner = FGM_GNU(conf)
+    # planner = FGM_STECH(conf)
+    planner = ODGPF(conf)
+    ```
+
 
 4. Parameters
  
-   If you want to change the parameters, you need modify `params.yaml` 
-
+   If you want to change the parameters, you need modify `params.yaml`
 
     - `wpt_path` - **real** path of waypoint file (you **MUST** change!)
     - `wpt_delimeter` - delimiter of csv file
@@ -48,10 +61,11 @@
     - `min_speed` - Min speed
     - `rate` - provoid particular rate for a loop (Hz)
     - `robot_length` - length of wheelbase
-
-
+    
     - `robot_scale` - width of car
     - `mass` - mass of car
     - `mu` - surface friction coefficient
     - `pi` - π
     - `g`- Gravitational acceleration 
+    
+5. 
