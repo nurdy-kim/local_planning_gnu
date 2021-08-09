@@ -105,7 +105,6 @@ class global_pure(threading.Thread):
         while True:
             sensor_data = self.global_od_q.get()
             
-
             self.current_position = [sensor_data[0][0], sensor_data[0][1], sensor_data[0][2]]
             self.current_speed = sensor_data[0][3]
             
@@ -561,6 +560,30 @@ class Obstacle_detect(threading.Thread):
         self.marker_pub = rospy.Publisher(self.marker_topic, Marker, queue_size=10)
         rospy.Subscriber(self.scan_topic, LaserScan, self.subCallback_od, queue_size=10)
         rospy.Subscriber(self.odom_topic, Odometry, self.Odome, queue_size = 10)
+
+         # FOR TRAJECTORY LOGGING
+        rospy.Subscriber("/race_info",RaceInfo,self.update_race_info,queue_size=10)
+        self.tr_flag = rospy.get_param('logging',False)
+        trj_path = rospy.get_param('trj_path')
+        
+        self.race_info = None
+        self.lap = 0
+
+        self.logging_idx = 0
+        self.race_time = 0
+        self.t_start = 0
+
+        if self.tr_flag:
+            self.trajectory = open(trj_path,'w')
+    
+    def update_race_info(self,race_info):
+
+        self.race_info = race_info
+        self.race_time = race_info.ego_elapsed_time
+
+        if self.race_info.ego_lap_count > self.lap:
+            print('lap_count',self.race_info.ego_lap_count,'elapsed_time',self.race_info.ego_elapsed_time,'collision',self.race_info.ego_collision)
+            self.lap += 1
     
     def Odome(self, odom_msg):
         # print("11")
@@ -615,7 +638,6 @@ class Obstacle_detect(threading.Thread):
                 self.actual_lookahead = distance
                 break
             wp_index_temp += 1
-
 
         marker = Marker()
         marker.header.frame_id = "map"
@@ -810,8 +832,22 @@ class Obstacle_detect(threading.Thread):
             else:
                 self.obs= True
                 break
+    
+    def trajectory_logging(self):
+        self.race_time = time.time() - self.t_start
+        if self.logging_idx <= self.wp_index_current:
+            self.trajectory.write(f"{self.race_time},")
+            self.trajectory.write(f"{self.current_position[0]},")
+            self.trajectory.write(f"{self.current_position[1]},")
+            self.trajectory.write(f"{self.current_position[2]},")
+            self.trajectory.write(f"{self.current_speed}\n")
+            
+            self.logging_idx += 1
+        else:
+            pass
                 
     def run(self):
+        self.t_start = time.time()
         t0 = time.time()
         loop = 0
 
@@ -820,8 +856,10 @@ class Obstacle_detect(threading.Thread):
             if self.scan_range == 0: continue
             loop += 1
             t1 = time.time()
-
+            
             self.obs_dect()
+            if self.tr_flag:
+                self.trajectory_logging()
 
             self.find_nearest_wp()
             self.get_lookahead_desired()
@@ -842,6 +880,10 @@ class Obstacle_detect(threading.Thread):
                     self.global_od_q.get()
                 self.global_od_q.put(sensor_data)
             rate.sleep()
+        
+        if self.tr_flag:
+            print(self.race_time)
+            self.trajectory.close()
 
 if __name__ == '__main__':
     rospy.init_node("driver_odg_pf_pp")

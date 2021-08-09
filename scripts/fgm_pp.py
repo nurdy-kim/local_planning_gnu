@@ -90,6 +90,7 @@ class global_pure(threading.Thread):
 
         self.interval = 0
         self.scan_range = 0
+    
 
     def run(self):
         rate = rospy.Rate(self.RATE)
@@ -304,7 +305,7 @@ class local_fgm(threading.Thread):
                 gap_temp[3] = end_idx_temp - start_idx_temp
                 self.gaps.append(gap_temp)
             i += 1
-        print(self.gaps)
+        # print(self.gaps)
 
     def for_find_gap(self, scan):
         self.for_point = (int)(self.theta_for / self.interval)
@@ -376,7 +377,7 @@ class local_fgm(threading.Thread):
     
     def main_drive(self, goal):
         # goal - [2] = max_idx,
-        print(goal)
+        # print(goal)
         self.max_angle = ((goal[0] + goal[1])/2 - self.front_idx) * self.interval
         self.wp_angle = self.desired_wp_rt[1]
 
@@ -407,7 +408,7 @@ class local_fgm(threading.Thread):
                 dmin = temp_avg
             temp_avg = 0
             i += 3
-        print(dmin)
+        # print(dmin)
         if dmin == 0:
             dmin = self.dmin_past
 
@@ -492,10 +493,10 @@ class Obstacle_detect(threading.Thread):
         self.lap = 0
 
         self.logging_idx = 0
-        self.closest_obs_dist = 0
-        self.closest_wp_dist = 0
         self.race_time = 0
         self.t_start = 0
+        # self.recording = open('/home/lab/f1tenth_ws/src/local_planning_gnu/utill/recording.csv', 'a')
+        
 
         if self.tr_flag:
             self.trajectory = open(trj_path,'w')
@@ -513,31 +514,11 @@ class Obstacle_detect(threading.Thread):
             self.trajectory.write(f"{self.current_position[0]},")
             self.trajectory.write(f"{self.current_position[1]},")
             self.trajectory.write(f"{self.current_position[2]},")
-            self.trajectory.write(f"{self.closest_obs_dist},")
-            self.trajectory.write(f"{self.closest_wp_dist},")
             self.trajectory.write(f"{self.current_speed}\n")
             
             self.logging_idx += 1
         else:
             pass
-    
-    def find_nearest_obs(self,obs):
-        min_di = 0
-        min_dv = 0
-        if len(obs) <= 1:
-            min_di = 20
-            min_dv = 20
-        else:
-            min_di = self.getDistance(self.current_position,obs[0])
-            for i in range(len(obs)):
-                _dist = self.getDistance(self.current_position,obs[i])
-                if _dist <= min_di:
-                    min_di = _dist
-                    min_dv = self.getDistance(self.waypoints[self.wp_index_current], obs[i])
-        
-        self.closest_obs_dist = min_di
-        self.closest_wp_dist = min_dv
-
     
     def Odome(self, odom_msg):
         # print("11")
@@ -777,7 +758,6 @@ class Obstacle_detect(threading.Thread):
             t1 = time.time()
             
             self.obs_dect()
-            self.find_nearest_obs(self.scan_obs)
 
             if self.tr_flag:
                 self.trajectory_logging()
@@ -802,11 +782,16 @@ class Obstacle_detect(threading.Thread):
                     self.global_od_q.get()
                 self.global_od_q.put(sensor_data)
             rate.sleep()
-        
+
         if self.tr_flag:
+            print(self.race_time, self.race_info.ego_collision)
+
+            # self.recording.write(f"race_time : {np.round(self.race_time,4),self.race_info.ego_collision}\n")
+
             self.trajectory.close()
 
 if __name__ == '__main__':
+
     rospy.init_node("driver_fgm_pp")
 
     global_od_q = Queue(1)

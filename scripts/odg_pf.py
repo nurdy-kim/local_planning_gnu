@@ -59,7 +59,7 @@ class ODGPF:
         self.safety_threshold = 0
         self.min_idx = 0
         self.f_rep_past_list =[0]*1080
-        self.start = time.time()
+        self.t_start = time.time()
         #self.p = 0.1
         self.w = 0.9
         self.d = 0.05
@@ -104,13 +104,16 @@ class ODGPF:
         self.idx_temp = 0
         self.flag = False
         self.race_info = None 
+        self.lap_time = 0
         self.lap = 0
+        self.recording = open('/home/lab/f1tenth_ws/src/local_planning_gnu/utill/recording.csv', 'a')
+
+
+
 
         # Trajectory Logging
         self.tr_flag = rospy.get_param('logging',False)
         self.logging_idx = 0
-        self.closest_obs_dist = 0
-        self.closest_wp_dist = 0
         self.race_time = 0
 
         if self.tr_flag:
@@ -132,6 +135,7 @@ class ODGPF:
             opp_collision: False
         """
         self.race_info = race_info
+        self.race_time = race_info.ego_elapsed_time
         
         if self.race_info.ego_lap_count > self.lap:
             print('lap_count',self.race_info.ego_lap_count,'elapsed_time', self.race_info.ego_elapsed_time)
@@ -144,36 +148,12 @@ class ODGPF:
         return np.sqrt(dx**2 + dy**2)
 
     def trajectory_logging(self):
-        self.race_time = time.time() - self.start
-        if self.logging_idx <= self.wp_index_current:
-            self.trajectory.write(f"{self.race_time},")
-            self.trajectory.write(f"{self.current_position[0]},")
-            self.trajectory.write(f"{self.current_position[1]},")
-            self.trajectory.write(f"{self.current_position[2]},")
-            self.trajectory.write(f"{self.closest_obs_dist},")
-            self.trajectory.write(f"{self.closest_wp_dist},")
-            self.trajectory.write(f"{self.current_speed}\n")
-            
-            self.logging_idx += 1
-        else:
-            pass
-    
-    def find_nearest_obs(self,obs):
-        min_di = 0
-        min_dv = 0
-        if len(obs) <= 1:
-            min_di = 20
-            min_dv = 20
-        else:
-            min_di = self.getDistance(self.current_position,obs[0])
-            for i in range(len(obs)):
-                _dist = self.getDistance(self.current_position,obs[i])
-                if _dist <= min_di:
-                    min_di = _dist
-                    min_dv = self.getDistance(self.waypoints[self.wp_index_current], obs[i])
-        
-        self.closest_obs_dist = min_di
-        self.closest_wp_dist = min_dv
+        _race_time = self.race_time
+        self.trajectory.write(f"{_race_time},")
+        self.trajectory.write(f"{self.current_position[0]},")
+        self.trajectory.write(f"{self.current_position[1]},")
+        self.trajectory.write(f"{self.current_position[2]},")
+        self.trajectory.write(f"{self.current_speed}\n")
             
     def transformPoint(self, origin, target):
         theta = self.PI/2 - origin[2]
@@ -531,7 +511,7 @@ class ODGPF:
         loop = 0
         rate = rospy.Rate(self.RATE)
         tn = time.time()
-        self.start = time.time()
+        self.t_start = time.time()
         # self.s1 = [0]*750
         # self.s2 = [0]*750
         # self.s3 = [0]*750
@@ -556,7 +536,7 @@ class ODGPF:
             loop += 1
 
             obstacles = self.define_obstacles(self.scan_filtered)
-            self.find_nearest_obs(obstacles)
+
             rep_list = self.rep_field(obstacles)
             att_list = self.att_field(self.desired_wp_rt)
             total_list = self.total_field(rep_list, att_list)
@@ -626,6 +606,10 @@ class ODGPF:
             rate.sleep()
 
         if self.tr_flag:
+            print(self.race_time, self.race_info.ego_collision)
+
+            self.recording.write(f"race_time : {np.round(self.race_time,4),self.race_info.ego_collision}\n")
+
             self.trajectory.close()
 
 if __name__ == '__main__':

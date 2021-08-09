@@ -107,6 +107,10 @@ def graphData(data_rows, name):
                     time_gp_graph.append(0)
                     # time_gp_n.append(0)
 
+        # delete list slice
+        
+
+
         print("---------------------------")
         print(f"Result of {name[idx]}")
         # print(f"Intervals: {t_i}")

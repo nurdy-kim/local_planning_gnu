@@ -91,12 +91,12 @@ class FGM:
 
         self.race_info = None
 
+        self.recording = open('/home/lab/f1tenth_ws/src/local_planning_gnu/utill/recording.csv', 'a')
+
         self.tr_flag = rospy.get_param('logging',False)
         self.logging_idx = 0
-        self.closest_obs_dist = 0
-        self.closest_wp_dist = 0
         self.race_time = 0
-        self.start = 0
+        self.t_start = 0
 
         if self.tr_flag:
             self.trajectory = open(self.trj_path,'w')
@@ -118,42 +118,19 @@ class FGM:
             opp_collision: False
         """
         self.race_info = race_info
+        self.race_time = race_info.ego_elapsed_time
         
         if self.race_info.ego_lap_count > self.lap:
             print('lap_count',self.race_info.ego_lap_count,'elapsed_time', self.race_info.ego_elapsed_time)
             self.lap += 1
     
     def trajectory_logging(self):
-        self.race_time = time.time() - self.start
-        if self.logging_idx <= self.wp_index_current:
-            self.trajectory.write(f"{self.race_time},")
-            self.trajectory.write(f"{self.current_position[0]},")
-            self.trajectory.write(f"{self.current_position[1]},")
-            self.trajectory.write(f"{self.current_position[2]},")
-            self.trajectory.write(f"{self.closest_obs_dist},")
-            self.trajectory.write(f"{self.closest_wp_dist},")
-            self.trajectory.write(f"{self.current_speed}\n")
-            
-            self.logging_idx += 1
-        else:
-            pass
-    
-    def find_nearest_obs(self,obs):
-        min_di = 0
-        min_dv = 0
-        if len(obs) <= 1:
-            min_di = 20
-            min_dv = 20
-        else:
-            min_di = self.getDistance(self.current_position,obs[0])
-            for i in range(len(obs)):
-                _dist = self.getDistance(self.current_position,obs[i])
-                if _dist <= min_di:
-                    min_di = _dist
-                    min_dv = self.getDistance(self.waypoints[self.wp_index_current], obs[i])
-        
-        self.closest_obs_dist = min_di
-        self.closest_wp_dist = min_dv
+        _race_time = self.race_time
+        self.trajectory.write(f"{_race_time},")
+        self.trajectory.write(f"{self.current_position[0]},")
+        self.trajectory.write(f"{self.current_position[1]},")
+        self.trajectory.write(f"{self.current_position[2]},")
+        self.trajectory.write(f"{self.current_speed}\n")
 
     def getDistance(self, a, b):
         dx = a[0] - b[0]
@@ -489,68 +466,10 @@ class FGM:
 
         self.dmin_past = dmin
     
-    def define_obstacles(self, scan):
-        obstacles = []
-        
-        i = self.detect_range_s
-        d_i = 0
-        while True:
-            if (i >= self.detect_range_e):
-                break
-            if scan[i] < self.THRESHOLD:
-                
-                start_temp = scan[i]
-                start_idx_temp = i
-                end_temp = start_temp
-                end_idx_temp = i
-                max_temp = scan[i]
-                max_idx_temp = i
-                obstacle_count = 1
-                
-                while ((scan[i] < self.THRESHOLD) and (i+1 < self.detect_range_e)):#self.scan_range
-                    i += 1
-                    end_temp += scan[i]
-                    obstacle_count += 1
-                    if scan[i] > max_temp:
-                        max_temp = scan[i]
-                        max_idx_temp = i
-                if scan[i] < self.THRESHOLD:
-                    i += 1   
-                end_idx_temp = i
-                
-                # print('start:', start_idx_temp,'end:',end_idx_temp, end=" ")
-
-
-                distance_obstacle = end_temp/obstacle_count
-                
-                
-                a_k = ((self.THRESHOLD - distance_obstacle)*np.exp(1/2))
-
-                angle_obstacle = (end_idx_temp - start_idx_temp)*self.interval
-
-                sigma_obstacle = np.arctan2((distance_obstacle * np.tan(angle_obstacle/2) + (self.ROBOT_SCALE/2)), distance_obstacle)
-
-                angle_obstacle_center = (int)((end_idx_temp - start_idx_temp)/2) + start_idx_temp 
-                angle_obstacle_center = angle_obstacle_center - self.front_idx
-
-                obstacle_inf = [angle_obstacle_center, sigma_obstacle, a_k]
-                
-                # print('angle_center',angle_obstacle_center,end=' ')
-                # print(sigma_obstacle)
-                obstacles.append(obstacle_inf)
-        
-            
-            i += 1
-
-        # print(len(obstacles))
-        # print()
-
-        return obstacles
-    
     def driving(self):
         loop = 0
         tn = time.time()
-        self.start = time.time()
+        self.t_start = time.time()
         rate = rospy.Rate(self.RATE)
         while not rospy.is_shutdown():
             if self.scan_range == 0: continue
@@ -559,8 +478,6 @@ class FGM:
             
             self.find_gap(self.scan_filtered)
             self.for_find_gap(self.scan_filtered)
-            obstacle = self.define_obstacles(self.scan_filtered)
-            self.find_nearest_obs(obstacle)
 
             self.desired_gap = self.find_best_gap(self.desired_wp_rt)
 
@@ -580,6 +497,8 @@ class FGM:
             rate.sleep()
         
         if self.tr_flag:
+            print(self.race_time)
+            self.recording.write(f"race_time : {np.round(self.race_time,4),self.race_info.ego_collision}\n")
             self.trajectory.close()
 
 if __name__ == '__main__':

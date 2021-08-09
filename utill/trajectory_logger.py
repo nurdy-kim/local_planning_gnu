@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 import rospy
 from visualization_msgs.msg import Marker, MarkerArray
+from sympy import Integral
 
 class logger:
     def __init__(self):
@@ -14,19 +15,32 @@ class logger:
         self.wp = np.genfromtxt(wpt_path, delimiter=wpt_delimeter)
         self.tr = np.genfromtxt(trj_path, delimiter=wpt_delimeter)
 
+        self.tr = np.array(self.filtering())
+        
         self.wp_list = self.wp[:,:2]
         self.tr_list = self.tr[:,1:3]
         self.pub1 = rospy.Publisher("waypoint_array", MarkerArray,queue_size=1)
         self.pub2 = rospy.Publisher("trajectory_array",MarkerArray, queue_size=1)
         self.wpArray = MarkerArray()
         self.trArray = MarkerArray()
-        
+        self.interval = 0.00435
         self.marking_wp()
 
+        self.recording = open('/home/lab/f1tenth_ws/src/local_planning_gnu/utill/recording.csv', 'a')
         self.tr_idx_current = 0
         self.nearest_dist = 0
 
-        self.weighted_RMS_k = 1.4
+        self.weighted_RMS_k = 1.4**2
+    
+    def filtering(self):
+        tr = self.tr[:,0]
+        filtered_tr = []
+        for i in range(len(self.tr)-1):
+            if tr[i+1] - tr[i] == 0:
+                continue
+            else:
+                filtered_tr.append(self.tr[i,:])
+        return filtered_tr
 
     def marking_wp(self):
         for i in range(len(self.wp_list)):
@@ -96,7 +110,7 @@ class logger:
     def calc_FR(self):
         # To Calculation FR 
         N = len(self.wp)
-        theta_i = self.tr[:,3]
+        theta_i = self.tr[:,3] 
         theta_v = self.calc_theta()
 
         div_u = 0
@@ -110,17 +124,6 @@ class logger:
         FR = div_u / ((N-1)*180)
 
         return FR
-    
-    def calc_DR(self):
-        di_list = self.tr[:,4]
-        dv_list = self.tr[:,5]
-        N = len(di_list)
-        sum_dr = 0
-        for i in range(N):
-            tmp = di_list[i]/(N*dv_list[i])
-            sum_dr += tmp
-        
-        return sum_dr
     
     def get_distance(self,x,y):
         dx = x[0] - y[0]
@@ -151,85 +154,109 @@ class logger:
                 break
     
     def calc_comfort(self):
-        comfort_score = 0
-        t = self.tr[:,0]
-        acc = self.calc_acc()
-        ax = []
-        ay = []
-        for i in range(len(acc)-1):
-            d_time = t[i+1] - t[i]
-            d_vertical = acc[i+1][0] - acc[i][0] 
-            d_horizontal = acc[i+1][1] - acc[i][1]
-            
-            ax.append(d_vertical / d_time)
-            ay.append(d_horizontal / d_time)
-
-        awx = np.mean(ax)
-        awy = np.mean(ay)
-
-        final_aw = np.sqrt(self.weighted_RMS_k**2 * awx + self.weighted_RMS_k**2 * awy)
+        ax, ay = self.calc_acc()
+        _t = np.linspace(0,len(ax))
         
-        if final_aw < 0.315:
+        sum_ax = 0
+        sum_ay = 0
+
+        for i in range(len(_t)):
+            sum_ax += _t[i] * (ax[i]**2)
+            sum_ay += _t[i] * (ay[i]**2)
+        
+        awx = (1/len(ax)) * sum_ax
+        awy = (1/len(ax)) * sum_ay
+
+        aw = np.sqrt(self.weighted_RMS_k * awx + self.weighted_RMS_k * awy)
+        # print(aw)
+        if aw < 0.315:
             comfort_score = 10
-        elif final_aw < 0.5:
+        elif aw < 0.5:
             comfort_score = 8
-        elif final_aw <0.63:
+        elif aw <0.63:
             comfort_score = 7
-        elif final_aw <0.8:
+        elif aw <0.8:
             comfort_score = 6
-        elif final_aw <1:
+        elif aw <1:
             comfort_score = 5
-        elif final_aw <1.25:
+        elif aw <1.25:
             comfort_score = 4
-        elif final_aw <1.6:
+        elif aw <1.6:
             comfort_score = 3
-        elif final_aw <2.5:
+        elif aw <2.5:
             comfort_score = 2
-        elif final_aw > 2.5:
+        elif aw > 2.5:
             comfort_score = 0
         
         return comfort_score
+
     
     def calc_acc(self):
-        v = self.tr[:,6]
+        v = self.tr[:,4]
         theta = self.tr[:,3]
-        acc = []
+        time = self.tr[:,0]
 
-        for i in range(len(v)-1):
-            v1 = v[i]
-            v2 = v[i+1]
-            theta1 = theta[i]
-            theta2 = theta[i+1]
+        vertical = []
+        horizon = []
 
-            v_vertical = (np.fabs(v1)*np.fabs(v2)*np.cos(theta2-theta1))
-            v_horizontal = (np.fabs(v1)*np.fabs(v2)*np.sin(theta2-theta1))
+        for i in range(len(self.tr)-1):
+            _vertical = np.fabs(v[i]) * np.fabs(v[i+1]) * np.cos(theta[i+1]-theta[i])
+            _horizon = np.fabs(v[i]) * np.fabs(v[i+1]) * np.sin(theta[i+1]-theta[i])
 
-            acc.append([v_vertical,v_horizontal])
+            vertical.append(_vertical)
+            horizon.append(_horizon)
         
-        return acc
+        ax = []
+        ay = []
+        
+        for j in range(len(vertical)-1):
+            _dt = 1
+            _ax = ((vertical[j+1] - vertical[j]) / _dt)
+            _ay = ((horizon[j] - horizon[j]) / _dt)
 
-    
+            ax.append(_ax)
+            ay.append(_ay)
+
+        return ax, ay
+
     def run(self):
+
         while not rospy.is_shutdown():
             self.pub1.publish(self.wpArray)
             self.pub2.publish(self.trArray)
             FR = self.calc_FR()
-            # DR = self.calc_DR()
             Comfort = self.calc_comfort()
-            average_speed = np.average(self.tr[:,6])
-            max_speed = np.max(self.tr[:,6])
+            average_speed = np.round(np.average(self.tr[:,4]),3)
+            max_speed = np.round(np.max(self.tr[:,4]),3)
 
-            print("laptime :",self.tr[-1,0])
-            print("average_speed :",average_speed)
-            print("max_speed :",max_speed)
-            print("Safety metric :",(1-FR))
-            print("Comfort : ", Comfort)
+            # print("average_speed :",average_speed)
+            # print("max_speed :",max_speed)
+            # print("Safety metric :",np.round((1-FR),3))
+            # print("Comfort : ", Comfort)
+
+            # self.recording.write(f"Safety metric : {np.round((1-FR),3)},Comfort : {Comfort},average : {average_speed},max : {max_speed}\n")
 
             rospy.sleep(1)
 
+
+    def write(self):
+
+            FR = self.calc_FR()
+            Comfort = self.calc_comfort()
+            average_speed = np.round(np.average(self.tr[:,4]),3)
+            max_speed = np.round(np.max(self.tr[:,4]),3)
+
+            print("average_speed :",average_speed)
+            print("max_speed :",max_speed)
+            print("Safety metric :",np.round((1-FR),5))
+            print("Comfort : ", Comfort)
+
+            self.recording.write(f"Safety metric : {np.round((1-FR),3)},Comfort : {Comfort},average : {average_speed},max : {max_speed}\n\n")
+            
 
 if __name__ == '__main__':
     rospy.init_node("logging")
     A = logger()
     A.run()
+    A.write()
     rospy.spin()
