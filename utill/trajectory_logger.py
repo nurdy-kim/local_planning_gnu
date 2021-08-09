@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 
 import rospy
 from visualization_msgs.msg import Marker, MarkerArray
-from sympy import Integral
 
 class logger:
     def __init__(self):

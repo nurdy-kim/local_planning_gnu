@@ -64,10 +64,6 @@ class global_pure(threading.Thread):
         self.MASS = rospy.get_param('mass', 3.47)
         self.RATE = rospy.get_param('rate', 100)
 
-        self.time_data_file_name = "fgm_pp_time_data5"
-        self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_pp_time_data.csv")
-        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
-        self.time_data_writer = csv.writer(self.time_data)
     
         self.wp_index_current = 0
         self.current_position = [0]*3
@@ -110,6 +106,8 @@ class global_pure(threading.Thread):
             self.t_loop = sensor_data[4][0]
             self.tn0 = sensor_data[4][1]
             self.tn1 = sensor_data[4][2]
+
+            self.time_data_writer = sensor_data[5]
 
             self.find_path()
             steer  = self.setSteeringAngle()
@@ -200,11 +198,6 @@ class local_fgm(threading.Thread):
         self.PI = rospy.get_param('pi', 3.141592)
         self.GRAVITY_ACC = rospy.get_param('g', 9.81)
 
-        self.time_data_file_name = "fgm_pp_time_data5"
-        self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_gnu_time_data.csv")
-        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
-        self.time_data_writer = csv.writer(self.time_data)
-
         self.interval = 0.00435
         self.scan_range = 0
         self.front_idx = 0
@@ -254,6 +247,8 @@ class local_fgm(threading.Thread):
             self.t_loop = sensor_data[4][0]
             self.tn0 = sensor_data[4][1]
             self.tn1 = sensor_data[4][2]
+
+            self.time_data_writer = sensor_data[5]
 
         
             
@@ -483,6 +478,13 @@ class Obstacle_detect(threading.Thread):
 
         rospy.Subscriber(self.scan_topic, LaserScan, self.subCallback_od, queue_size=10)
         rospy.Subscriber(self.odom_topic, Odometry, self.Odome, queue_size = 10)
+
+        # FOR EXECUTION TIME LOGGING
+        self.time_data_file_name = "fgm_pp_time_data"
+        self.time_data_path = rospy.get_param("time_data_path")
+        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
+        self.time_data_writer = csv.writer(self.time_data)
+        self.time_data_writer.writerow("index, time, exe_time")
 
         # FOR TRAJECTORY LOGGING
         rospy.Subscriber("/race_info",RaceInfo,self.update_race_info,queue_size=10)
@@ -770,14 +772,14 @@ class Obstacle_detect(threading.Thread):
                 self.transformed_desired_point = self.transformPoint(self.current_position, self.desired_point)
                 self.transformed_desired_point = self.xyt2rt(self.transformed_desired_point)
             # self.transformed_desired_point = self.xyt2rt(self.transformed_desired_point)
-                sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead, [loop, t0, t1]]
+                sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead, [loop, t0, t1], self.time_data_writer]
                 if self.local_od_q.full():
                     self.local_od_q.get()
                 self.local_od_q.put(sensor_data)
             else:
                 self.transformed_desired_point = self.transformPoint(self.current_position, self.desired_point)
             # self.transformed_desired_point = self.xyt2rt(self.transformed_desired_point)
-                sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead, [loop, t0, t1]]
+                sensor_data = [self.current_position, self.lidar_data, self.transformed_desired_point, self.actual_lookahead, [loop, t0, t1], self.time_data_writer]
                 if self.global_od_q.full():
                     self.global_od_q.get()
                 self.global_od_q.put(sensor_data)

@@ -42,10 +42,10 @@ class FGM:
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
 
         self.time_data_file_name = "fgm_gnu_time_data"
-        self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_gnu_time_data.csv")
+        self.time_data_path = rospy.get_param("time_data_path")
         self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
         self.time_data_writer = csv.writer(self.time_data)
-
+        self.time_data_writer.writerow("index, time, exe_time")
         
         self.ackermann_data.drive.acceleration = 0
         self.ackermann_data.drive.jerk = 0
@@ -169,12 +169,7 @@ class FGM:
 
     def get_waypoint(self):
         file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')
-        """
-        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_obsmap2.csv',delimiter=',',dtype='float')
-        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_vegas_test.csv',delimiter=',',dtype='float')
-        file_wps = np.genfromtxt('/catkin_ws/src/car_duri/wp_vegas.csv',delimiter=',',dtype='float')
-        # file_wps = np.genfromtxt('../f1tenth_ws/src/car_duri/wp_floor8.csv',delimiter=',',dtype='float')
-        """
+
         temp_waypoint = []
         for i in file_wps:
             wps_point = [i[0],i[1],0]

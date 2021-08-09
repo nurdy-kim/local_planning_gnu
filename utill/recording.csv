@@ -1,109 +1,14 @@
-20.2
-Safety metric : 0.983,Comfort : 2,average : 5.555,max : 6.645
+Safety metric : 0.983,Comfort : 8,average : 5.091,max : 11.216
 
-race_time : (20.1, False)
-Safety metric : 0.983,Comfort : 0,average : 5.626,max : 6.676
+race_time : (162.02, False)
+Safety metric : 0.983,Comfort : 8,average : 5.081,max : 11.196
 
-race_time : (19.92, False)
-Safety metric : 0.983,Comfort : 5,average : 5.626,max : 6.577
+race_time : (162.21, False)
+Safety metric : 0.983,Comfort : 8,average : 5.087,max : 11.092
 
-race_time : (19.77, False)
-Safety metric : 0.983,Comfort : 0,average : 5.635,max : 6.754
+race_time : (161.99, False)
+Safety metric : 0.983,Comfort : 8,average : 5.075,max : 11.148
 
-race_time : (19.65, False)
-Safety metric : 0.983,Comfort : 0,average : 5.659,max : 6.627
-
-race_time : (19.9, False)
-Safety metric : 0.983,Comfort : 0,average : 5.615,max : 6.664
-
-race_time : (19.85, False)
-Safety metric : 0.983,Comfort : 2,average : 5.598,max : 6.658
-
-race_time : (20.16, False)
-Safety metric : 0.983,Comfort : 7,average : 5.632,max : 6.742
-
-race_time : (19.37, False)
-Safety metric : 0.983,Comfort : 2,average : 5.652,max : 6.583
-
-race_time : (19.72, False)
-Safety metric : 0.983,Comfort : 0,average : 5.622,max : 6.634
-
-race_time : (20.5, False)
-Safety metric : 0.983,Comfort : 0,average : 5.592,max : 6.692
-
-Safety metric : 0.983,Comfort : 0,average : 5.592,max : 6.692
-
-Safety metric : 0.983,Comfort : 0,average : 4.775,max : 6.087
-
-race_time : (27.3, False)
-Safety metric : 0.979,Comfort : 0,average : 4.562,max : 5.847
-
-race_time : (43.25, False)
-Safety metric : 0.978,Comfort : 0,average : 4.542,max : 5.912
-
-Safety metric : 0.978,Comfort : 0,average : 4.542,max : 5.912
-
-race_time : (26.27, False)
-Safety metric : 0.983,Comfort : 0,average : 4.247,max : 5.93
-
-Safety metric : 0.983,Comfort : 0,average : 4.247,max : 5.93
-
-Safety metric : 0.983,Comfort : 0,average : 4.247,max : 5.93
-
-Safety metric : 0.983,Comfort : 0,average : 4.224,max : 5.93
-
-Safety metric : 0.983,Comfort : None,average : 4.224,max : 5.93
-
-Safety metric : 0.983,Comfort : None,average : 4.224,max : 5.93
-
-Safety metric : 0.983,Comfort : None,average : 4.224,max : 5.93
-
-Safety metric : 0.983,Comfort : None,average : 4.224,max : 5.93
-
-Safety metric : 0.983,Comfort : None,average : 4.224,max : 5.93
-
-Safety metric : 0.983,Comfort : None,average : 4.224,max : 5.93
-
-Safety metric : 0.983,Comfort : None,average : 4.224,max : 5.93
-
-Safety metric : 0.983,Comfort : None,average : 4.224,max : 5.93
-
-Safety metric : 0.983,Comfort : None,average : 4.224,max : 5.93
-
-Safety metric : 0.983,Comfort : None,average : 4.224,max : 5.93
-
-Safety metric : 0.983,Comfort : 0,average : 4.224,max : 5.93
-
-Safety metric : 0.983,Comfort : 8,average : 4.224,max : 5.93
-
-race_time : (25.33, False)
-race_time : (26.44, False)
-Safety metric : 0.983,Comfort : 8,average : 4.235,max : 5.947
-
-race_time : (19.11, False)
-race_time : (7.66, False)
-race_time : (22.52, False)
-race_time : (95.16, False)
-Safety metric : 0.983,Comfort : 8,average : 4.402,max : 6.773
-
-race_time : (83.02, False)
-Safety metric : 0.983,Comfort : 8,average : 5.016,max : 11.154
-
-race_time : (9.21, True)
-race_time : (10.78, False)
-Safety metric : 0.982,Comfort : 2,average : 9.927,max : 14.306
-
-race_time : (18.62, False)
-Safety metric : 0.983,Comfort : 8,average : 5.582,max : 6.953
-
-race_time : (14.06, False)
-Safety metric : 0.983,Comfort : 6,average : 7.419,max : 9.82
-
-race_time : (12.4, False)
-Safety metric : 0.973,Comfort : 2,average : 8.865,max : 14.339
-
-race_time : (10.67, False)
-Safety metric : 0.983,Comfort : 2,average : 9.929,max : 14.337
-
-Safety metric : 0.983,Comfort : 2,average : 9.929,max : 14.337
+race_time : (162.54, False)
+Safety metric : 0.983,Comfort : 8,average : 5.04,max : 11.112
 

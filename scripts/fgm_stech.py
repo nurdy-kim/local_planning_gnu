@@ -35,10 +35,11 @@ class FGM:
         self.REF_THETA_GAIN = rospy.get_param('ref_theta_gain', 1.5)
         self.PI = rospy.get_param('pi', 3.141592)
 
-        self.time_data_file_name = "fgm_stech_time_data1"
-        self.time_data_path = rospy.get_param("time_data_path", "/home/lab/f1tenth_ws/src/car_duri/recording/fgm_stech_time_data.csv")
+        self.time_data_file_name = "fgm_stech_time_data"
+        self.time_data_path = rospy.get_param("time_data_path")
         self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
         self.time_data_writer = csv.writer(self.time_data)
+        self.time_data_writer.writerow("index, time, exe_time")
         
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
