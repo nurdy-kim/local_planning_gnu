@@ -45,7 +45,7 @@ class FGM:
         self.time_data_path = rospy.get_param("time_data_path")
         self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
         self.time_data_writer = csv.writer(self.time_data)
-        self.time_data_writer.writerow("index, time, exe_time")
+        self.time_data_writer.writerow("index","time","exe_time")
         
         self.ackermann_data.drive.acceleration = 0
         self.ackermann_data.drive.jerk = 0

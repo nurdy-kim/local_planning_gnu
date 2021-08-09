@@ -484,7 +484,7 @@ class Obstacle_detect(threading.Thread):
         self.time_data_path = rospy.get_param("time_data_path")
         self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
         self.time_data_writer = csv.writer(self.time_data)
-        self.time_data_writer.writerow("index, time, exe_time")
+        self.time_data_writer.writerow("index","time","exe_time")
 
         # FOR TRAJECTORY LOGGING
         rospy.Subscriber("/race_info",RaceInfo,self.update_race_info,queue_size=10)
