@@ -1,2 +1,14 @@
 
 .DS_Store
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/local_planning_gnu.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.temp/fgm_pp.py
+.temp/FR_cal.py
+.temp/odg_fr_test.py
+.temp/odg_pf_pp.py
+planner/__pycache__/fgm_gnu.cpython-38.pyc
+planner/__pycache__/fgm_stech.cpython-38.pyc
+planner/__pycache__/odg_pf.cpython-38.pyc
