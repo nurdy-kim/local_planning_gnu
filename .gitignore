@@ -12,3 +12,5 @@
 planner/__pycache__/fgm_gnu.cpython-38.pyc
 planner/__pycache__/fgm_stech.cpython-38.pyc
 planner/__pycache__/odg_pf.cpython-38.pyc
+.test
+.backup
