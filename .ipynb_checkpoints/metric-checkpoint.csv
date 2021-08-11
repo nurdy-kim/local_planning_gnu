@@ -1,0 +1,31 @@
+algorithm,map,lap_time_1,lap_time_2,st,comfort,avg_speed,max_speed,collision
+ODG-PF,Racing,138.5,276.16,0.983,8,2.98933333,3,passed
+ODG-PF,Sprint,36.6433333,0,0.98256,8,2.912,3,passed
+ODG-PF,Obstacle 1,37.5556,0,0.982936,8,2.9154,3,passed
+ODG-PF,Obstacle 2,38.3578,0,0.982298,8,2.9218,3,passed
+ODG-PF,Curve,57.7414,0,0.982938,8,2.942,3,passed
+ODG-PF-GNU,Racing,82.77259,163.4014,0.983426,8.2,5.0321,11.1377,passed
+ODG-PF-GNU,Sprint,10.8746,0,0.982543,2.6,9.5582,14.0249,passed
+ODG-PF-GNU,Obstacle 1,23.9747,0,0.982895,4,4.5089,7.1426,passed
+ODG-PF-GNU,Obstacle 2,18.30759,0,0.982075,2.3,5.9347,10.3793,passed
+ODG-PF-GNU,Curve,40.6432,0,0.983306,2.9,4.4786,8.1982,passed
+ODG-PF-PP,Racing,89.782,177.192,0.9836,10,4.7294,9.356,passed
+ODG-PF-PP,Sprint,14.136,0,0.983,6.2,7.5721,9.8187,passed
+ODG-PF-PP,Obstacle 1,23.767,0,0.983,6.1,4.7642,7.237,passed
+ODG-PF-PP,Obstacle 2,23.1439,0,0.983,6.3,8.0801,8.8845,passed
+ODG-PF-PP,Curve,37.581,0,0.9831,5.9,4.6525,7.5018,passed
+FGM-STECH,Easy Racing,0,0,0,0,0,0,failed
+FGM-STECH,Sprint,15.825,0,0.9827,0.4,6.6758,7.7559,passed
+FGM-STECH,Obstacle 1,18.952,0,0.983,1.4,5.6879,7.5376,passed
+FGM-STECH,Obstacle 2,0,0,0,0,0,0,failed
+FGM-STECH,Curve,0,0,0,0,0,0,failed
+FGM-GNU,Easy Racing,55.879,109.049,0.9872,0,7.1182,12.9594,failed
+FGM-GNU,Sprint,12.166,0,0.9811,0,9.2888,13.7544,passed
+FGM-GNU,Obstacle 1,19.883,0,0.983,0,5.7453,7.7764,passed
+FGM-GNU,Obstacle 2,0,0,0,0,0,0,failed
+FGM-GNU,Curve,0,0,0,0,0,0,failed
+FGM-PP,Racing,83.5165,164.0146,0.9833,9.4,5.1605,11.145,failed
+FGM-PP,Sprint,11.5126,0,0.982957,2.1,9.4147,13.9439,passed
+FGM-PP,Obstacle 1,23.0844,0,0.982845,3.8,4.7829,7.4554,passed
+FGM-PP,Obstacle 2,17.2564,0,0.982588,5.8,6.3015,9.25,passed
+FGM-PP,Curve,36.5608,0,0.982912,2.2,4.7799,8.3537,passed
