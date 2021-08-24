@@ -11,6 +11,7 @@ from queue import Queue
 import math
 import time
 import csv
+import os
 #from multiprocessing import Process, Queue
 
 from sensor_msgs.msg import LaserScan
@@ -23,7 +24,7 @@ class maindrive(threading.Thread):
     def __init__(self, main_q):
         super(maindrive, self).__init__()
         self.main_q = main_q
-        self.RATE = 100
+        self.RATE = rospy.get_param('rate', 300)
         self.ackermann_data = AckermannDriveStamped()
         self.drive_topic = rospy.get_param("drive_topic", "/drive")
         self.drive_pub = rospy.Publisher(self.drive_topic, AckermannDriveStamped, queue_size=10)
@@ -121,7 +122,8 @@ class global_pure(threading.Thread):
             self.main_q.put(ackermann)
             # print("global")
             self.tn2 = time.time()
-            self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1), "gp"])
+            if self.time_data_writer:
+                self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1), "gp"])
             # print("local execution time:", time.time() - self.t1)
             rate.sleep()
     
@@ -259,7 +261,8 @@ class local_fgm(threading.Thread):
             self.main_drive(gap)
 
             self.tn2 = time.time()
-            self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1), "lp"])
+            if self.time_data_writer:
+                self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1), "lp"])
             # print("local execution time:", time.time() - self.tn1)
             # print("local")
             #rate.sleep()
@@ -373,7 +376,7 @@ class local_fgm(threading.Thread):
     def main_drive(self, goal):
         # goal - [2] = max_idx,
         # print(goal)
-        self.max_angle = ((goal[0] + goal[1])/2 - self.front_idx) * self.interval
+        self.max_angle = ((goal[0] + goal[1])/2 - self.front_idx ) * self.interval
         self.wp_angle = self.desired_wp_rt[1]
 
         temp_avg = 0
@@ -480,16 +483,14 @@ class Obstacle_detect(threading.Thread):
         rospy.Subscriber(self.odom_topic, Odometry, self.Odome, queue_size = 10)
 
         # FOR EXECUTION TIME LOGGING
-        self.time_data_file_name = "fgm_pp_time_data"
-        self.time_data_path = rospy.get_param("time_data_path")
-        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
-        self.time_data_writer = csv.writer(self.time_data)
-        self.time_data_writer.writerow("index","time","exe_time")
+        self.logging_dic_path = rospy.get_param("data_path")
 
         # FOR TRAJECTORY LOGGING
         rospy.Subscriber("/race_info",RaceInfo,self.update_race_info,queue_size=10)
-        self.tr_flag = rospy.get_param('logging',False)
-        trj_path = rospy.get_param('trj_path')
+
+        self.logger_trigger = rospy.get_param('logging', False)
+        self.logger_init()
+
         
         self.race_info = None
         self.lap = 0
@@ -500,27 +501,58 @@ class Obstacle_detect(threading.Thread):
         # self.recording = open('/home/lab/f1tenth_ws/src/local_planning_gnu/utill/recording.csv', 'a')
         
 
-        if self.tr_flag:
-            self.trajectory = open(trj_path,'w')
+    def logger_init(self):
+        if self.logger_trigger:
+            
+            interval = 0
+
+            time_name = "FGMPP_TIME_DATA"
+            trajectory_name = "FGMPP_TRAJECTORY_DATA"
+
+            while True:
+                self.time_data_file_name = f"{time_name}_{interval}.csv"
+                self.traj_data_file_name = f"{trajectory_name}_{interval}.csv"
+
+                self.time_data_file = f"{self.logging_dic_path}/{self.time_data_file_name}"
+                self.traj_data_file = f"{self.logging_dic_path}/{self.traj_data_file_name}"
+
+                time_file_check = os.path.isfile(self.time_data_file)
+                traj_file_check = os.path.isfile(self.traj_data_file)
+
+                if time_file_check == False and traj_file_check == False:
+                    break
+                else:
+                    interval += 1
+
+            print(f"Execution Time Data Path: {self.time_data_file_name}")
+            print(f"Trajectoy Data Path: {self.time_data_file_name}")
+           
+            self.time_data = open(self.time_data_file, "w", newline="")
+
+            self.time_data_writer = csv.writer(self.time_data)
+            self.time_data_writer.writerow(["index","time","exe_time"])
+
+            self.trajectory = open(self.traj_data_file,'w')
+
+        else:
+            self.time_data_writer = None 
+
+
     
     def update_race_info(self,race_info):
         self.race_info = race_info
+        self.race_time = race_info.ego_elapsed_time
         if self.race_info.ego_lap_count > self.lap:
             print('lap_count',self.race_info.ego_lap_count,'elapsed_time',self.race_info.ego_elapsed_time,'collision',self.race_info.ego_collision)
             self.lap += 1
     
     def trajectory_logging(self):
-        self.race_time = time.time() - self.t_start
-        if self.logging_idx <= self.wp_index_current:
-            self.trajectory.write(f"{self.race_time},")
-            self.trajectory.write(f"{self.current_position[0]},")
-            self.trajectory.write(f"{self.current_position[1]},")
-            self.trajectory.write(f"{self.current_position[2]},")
-            self.trajectory.write(f"{self.current_speed}\n")
-            
-            self.logging_idx += 1
-        else:
-            pass
+        _race_time = self.race_time
+        self.trajectory.write(f"{_race_time},")
+        self.trajectory.write(f"{self.current_position[0]},")
+        self.trajectory.write(f"{self.current_position[1]},")
+        self.trajectory.write(f"{self.current_position[2]},")
+        self.trajectory.write(f"{self.current_speed}\n")
     
     def Odome(self, odom_msg):
         # print("11")
@@ -579,7 +611,8 @@ class Obstacle_detect(threading.Thread):
 
     def get_lookahead_desired(self):
         _vel = self.current_speed
-        self.lookahead_desired = 0.5 + (0.3 * _vel)
+        # self.lookahead_desired = 0.5 + (0.3 * _vel)
+        self.lookahead_desired = 1.0 + (0.3 * _vel)
     
     def get_waypoint(self):
         file_wps = np.genfromtxt(self.waypoint_real_path, delimiter=self.waypoint_delimeter, dtype='float')      
@@ -761,7 +794,7 @@ class Obstacle_detect(threading.Thread):
             
             self.obs_dect()
 
-            if self.tr_flag:
+            if self.logger_trigger:
                 self.trajectory_logging()
             
             self.find_nearest_wp()
@@ -785,7 +818,7 @@ class Obstacle_detect(threading.Thread):
                 self.global_od_q.put(sensor_data)
             rate.sleep()
 
-        if self.tr_flag:
+        if self.logger_trigger:
             print(self.race_time, self.race_info.ego_collision)
 
             # self.recording.write(f"race_time : {np.round(self.race_time,4),self.race_info.ego_collision}\n")

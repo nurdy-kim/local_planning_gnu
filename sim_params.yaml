@@ -3,18 +3,17 @@ odom_topic: /odom
 scan_topic: /scan
 marker_topic: /marker
 
-wpt_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/map/wp_vegas_test.csv" # Locate waypoints(csv) files real path
+wpt_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/map/wp_obsmap1.csv" # Locate waypoints(csv) files real path
 wpt_delimeter: ","
 
-# time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record/vegas_test/odg_pf_pp_time_data"
-time_data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record/_temp"
+data_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/record/obstacle_1"
 
-trj_path: "/home/lab/f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv"
 logging: False
 
-max_speed: 20.0
+
+max_speed: 15.0
 min_speed: 01.5
-rate: 100
+rate: 300
 
 robot_length: 0.3302
 robot_scale: 0.2032
@@ -23,3 +22,7 @@ mass: 3.47
 mu: 0.523
 pi: 3.141592
 g: 9.81
+
+# only trajectory_logger.py
+file_name: "ODG_PF_TRAJECTORY_DATA"
+interval: 3

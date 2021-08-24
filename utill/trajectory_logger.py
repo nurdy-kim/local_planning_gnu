@@ -9,12 +9,18 @@ from visualization_msgs.msg import Marker, MarkerArray
 class logger:
     def __init__(self):
         wpt_path = rospy.get_param('wpt_path')
-        trj_path = rospy.get_param('trj_path')
         wpt_delimeter = rospy.get_param('wpt_delimeter')
+
+        trj_data_path = rospy.get_param("data_path")
+        trj_file_path = rospy.get_param("file_name")
+        trj_interval = rospy.get_param("interval")
+
+        self.trj_path = f"{trj_data_path}/{trj_file_path}_{trj_interval}.csv"
         self.wp = np.genfromtxt(wpt_path, delimiter=wpt_delimeter)
-        self.tr = np.genfromtxt(trj_path, delimiter=wpt_delimeter)
+        self.tr = np.genfromtxt(self.trj_path, delimiter=wpt_delimeter)
 
         self.tr = np.array(self.filtering())
+        
         
         self.wp_list = self.wp[:,:2]
         self.tr_list = self.tr[:,1:3]
@@ -167,7 +173,7 @@ class logger:
         awy = (1/len(ax)) * sum_ay
 
         aw = np.sqrt(self.weighted_RMS_k * awx + self.weighted_RMS_k * awy)
-        # print(aw)
+        print(aw)
         if aw < 0.315:
             comfort_score = 10
         elif aw < 0.5:

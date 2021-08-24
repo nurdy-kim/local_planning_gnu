@@ -5,6 +5,7 @@ import math
 import numpy as np
 import time
 import csv
+import os
 
 from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
@@ -27,7 +28,7 @@ class FGM:
         self.ROBOT_LENGTH = rospy.get_param('robot_length', 0.325)
         self.SPEED_MAX = rospy.get_param('max_speed',20.0)
         self.SPEED_MIN = rospy.get_param('min_speed', 1.5)
-        self.RATE = rospy.get_param('rate', 100)
+        self.RATE = rospy.get_param('rate', 300)
         self.ROBOT_SCALE = rospy.get_param('robot_scale', 0.35)
         self.THRESHOLD = rospy.get_param('threshold', 3.0)
         self.GAP_SIZE = rospy.get_param('gap_size', 1)
@@ -41,12 +42,8 @@ class FGM:
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
 
-        self.time_data_file_name = "fgm_gnu_time_data"
-        self.time_data_path = rospy.get_param("time_data_path")
-        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
-        self.time_data_writer = csv.writer(self.time_data)
-        self.time_data_writer.writerow("index","time","exe_time")
-        
+        self.logging_dic_path = rospy.get_param("data_path")
+
         self.ackermann_data.drive.acceleration = 0
         self.ackermann_data.drive.jerk = 0
         self.ackermann_data.drive.steering_angle = 0
@@ -92,13 +89,49 @@ class FGM:
 
         self.race_info = None
 
-        self.tr_flag = rospy.get_param('logging',False)
+        self.logger_trigger = rospy.get_param('logging', False)
+        self.logger_init()
+
         self.logging_idx = 0
         self.race_time = 0
         self.t_start = 0
 
-        if self.tr_flag:
-            self.trajectory = open(self.trj_path,'w')
+
+    def logger_init(self):
+        if self.logger_trigger:
+            
+            interval = 0
+
+            time_name = "FGMGNU_TIME_DATA"
+            trajectory_name = "FGMGNU_TRAJECTORY_DATA"
+
+            while True:
+                self.time_data_file_name = f"{time_name}_{interval}.csv"
+                self.traj_data_file_name = f"{trajectory_name}_{interval}.csv"
+
+                self.time_data_file = f"{self.logging_dic_path}/{self.time_data_file_name}"
+                self.traj_data_file = f"{self.logging_dic_path}/{self.traj_data_file_name}"
+
+                time_file_check = os.path.isfile(self.time_data_file)
+                traj_file_check = os.path.isfile(self.traj_data_file)
+
+                if time_file_check == False and traj_file_check == False:
+                    break
+                else:
+                    interval += 1
+
+            print(f"Execution Time Data Path: {self.time_data_file_name}")
+            print(f"Trajectoy Data Path: {self.time_data_file_name}")
+           
+            self.time_data = open(self.time_data_file, "w", newline="")
+
+            self.time_data_writer = csv.writer(self.time_data)
+            self.time_data_writer.writerow(["index","time","exe_time"])
+
+            self.trajectory = open(self.traj_data_file,'w')
+
+        else:
+            pass
 
     def update_race_info(self,race_info):
         """
@@ -175,7 +208,7 @@ class FGM:
             wps_point = [i[0],i[1],0]
             temp_waypoint.append(wps_point)
             self.wp_num += 1
-        print("wp_num",self.wp_num)
+        # print("wp_num",self.wp_num)
         return temp_waypoint
 
     def find_desired_wp(self):
@@ -230,6 +263,12 @@ class FGM:
         marker.color.g = 0.0
         marker.color.b = 0.0
         self.marker_pub.publish(marker)
+
+
+        _vel = self.current_speed
+
+        self.LOOK = 0.5 + (0.5 * _vel)
+
 
     def Odome(self, odom_msg):
         qx = odom_msg.pose.pose.orientation.x 
@@ -310,18 +349,19 @@ class FGM:
     def find_gap(self, scan):
         self.gaps = []
         
-        i = 0
+        i = 269
 
-        while i < self.scan_range - self.GAP_SIZE:
-
+        while i < 810 - self.GAP_SIZE:
+            gap_count = 0
             if scan[i] > self.THRESHOLD:
                 start_idx_temp = i
                 end_idx_temp = i
                 max_temp = scan[i]
                 max_idx_temp = i
                 
-                while ((scan[i] > self.THRESHOLD) and (i+1 < self.scan_range )):
+                while ((scan[i] > self.THRESHOLD) and (i+1 < 810 )):
                     i += 1
+                    gap_count += 1
                     if scan[i] > max_temp:
                         max_temp = scan[i]
                         max_idx_temp = i
@@ -329,10 +369,15 @@ class FGM:
                     i += 1
                 end_idx_temp = i
 
+                if gap_count <= 5:
+                    continue
+                
+                gap_center = (int)((end_idx_temp - start_idx_temp)/2) + start_idx_temp 
+
                 gap_temp = [0]*3
                 gap_temp[0] = start_idx_temp
                 gap_temp[1] = end_idx_temp
-                gap_temp[2] = max_idx_temp
+                gap_temp[2] = gap_center#max_idx_temp
                 self.gaps.append(gap_temp)
             i += 1
 
@@ -351,14 +396,37 @@ class FGM:
                 max_temp = scan[i]
                 max_idx_temp = i
         #[0] = start_idx, [1] = end_idx, [2] = max_idx_temp
+        gap_center = (int)((end_idx_temp - start_idx_temp)/2) + start_idx_temp 
         self.for_gap[0] = start_idx_temp
         self.for_gap[1] = end_idx_temp
-        self.for_gap[2] = max_idx_temp
+        self.for_gap[2] = gap_center#max_idx_temp
 
 
     #ref - [0] = r, [1] = theta
+    # 목표 좌표에 가까운 갭이 차체와 angle 차이가 너무 클 경우 무시
+    # 갭을 선택하면 차체와 해당 장애물과의 angle 차이가 90이 넘을 때까지 해당 갭만 보고 통과
     def find_best_gap(self, ref):
+        # print(self.gaps)
         num = len(self.gaps)
+        # if num == 0:
+        #     return self.for_gap
+        # else:
+
+        #     step = (int)(ref[1]/self.interval)
+
+        #     ref_idx = self.front_idx + step
+
+        #     gap_idx = 0
+
+        #     i = 1
+        #     while (i < num):
+        #         if self.gaps[i][2] > self.gaps[gap_idx][2]:
+        #             gap_idx = i
+                    
+        #         i += 1
+        #     #가장 작은 distance를 갖는 gap만 return
+        #     return self.gaps[gap_idx]
+
         if num == 0:
             return self.for_gap
         else:
@@ -463,9 +531,9 @@ class FGM:
             dmin = self.dmin_past
 
         controlled_angle = ( (self.GAP_THETA_GAIN/dmin)*self.max_angle + self.REF_THETA_GAIN*self.wp_angle)/(self. GAP_THETA_GAIN/dmin + self.REF_THETA_GAIN) 
-        distance = 1.0
+        distance = 1.5
         #path_radius = 경로 반지름 
-        path_radius = distance / (2*np.sin(controlled_angle))
+        path_radius = 1.5 / (2*np.sin(controlled_angle))
         #
         steering_angle = np.arctan(self.RACECAR_LENGTH/path_radius)
 
@@ -509,14 +577,14 @@ class FGM:
                 tn0: driving loop start Time
                 tn1: driving loop final Time
             """
-            self.time_data_writer.writerow([loop, tn1-tn, tn1-tn0])
 
-            if self.tr_flag:
+            if self.logger_trigger:
+                self.time_data_writer.writerow([loop, tn1-tn, tn1-tn0])
                 self.trajectory_logging()
 
             rate.sleep()
         
-        if self.tr_flag:
+        if self.logger_trigger:
             print(self.race_time)
             self.trajectory.close()
 

@@ -9,6 +9,7 @@ import math
 import numpy as np
 import time
 import csv
+import os
 
 import matplotlib.pyplot as plt
 from visualization_msgs.msg import Marker, MarkerArray
@@ -30,7 +31,7 @@ class ODGPF:
         self.GRAVITY_ACC = rospy.get_param('g', 9.81)
         self.SPEED_MAX = rospy.get_param('max_speed', 20.0)
         self.SPEED_MIN = rospy.get_param('min_speed', 1.5)
-        self.RATE = rospy.get_param('rate', 100)
+        self.RATE = rospy.get_param('rate', 300)
         self.ROBOT_SCALE = rospy.get_param('robot_scale', 0.25)
         self.ROBOT_LENGTH = rospy.get_param('robot_length', 0.325)
         self.LOOK = 5
@@ -39,17 +40,11 @@ class ODGPF:
         self.scan_range = 0
         self.desired_wp_rt = [0,0]
 
-        self.time_data_file_name = "odg_pf_pp_time_data"
-        self.time_data_path = rospy.get_param("time_data_path")
-        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
-        self.time_data_writer = csv.writer(self.time_data)
-        self.time_data_writer.writerow("index","time","exe_time")
+        self.logging_dic_path = rospy.get_param("data_path")
 
         self.waypoint_real_path = rospy.get_param('wpt_path', '../map/wp_vegas.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
 
-        self.trj_path = rospy.get_param('trj_path', '')
-        self.time_data_path = rospy.get_param('time_data_path', '')
 
         self.front_idx = 539
         self.detect_range_s = 299
@@ -109,17 +104,50 @@ class ODGPF:
         self.lap = 0
         self.recording = open('/home/lab/f1tenth_ws/src/local_planning_gnu/utill/recording.csv', 'a')
 
-
-
-
         # Trajectory Logging
-        self.tr_flag = rospy.get_param('logging',False)
+        self.logger_trigger = rospy.get_param('logging', False)
+        self.logger_init()
+
         self.logging_idx = 0
         self.race_time = 0
 
-        if self.tr_flag:
-            self.trajectory = open(self.trj_path,'w')
-    
+
+    def logger_init(self):
+        if self.logger_trigger:
+            
+            interval = 0
+
+            time_name = "ODGPF_TIME_DATA"
+            trajectory_name = "ODGPF_TRAJECTORY_DATA"
+
+            while True:
+                self.time_data_file_name = f"{time_name}_{interval}.csv"
+                self.traj_data_file_name = f"{trajectory_name}_{interval}.csv"
+
+                self.time_data_file = f"{self.logging_dic_path}/{self.time_data_file_name}"
+                self.traj_data_file = f"{self.logging_dic_path}/{self.traj_data_file_name}"
+
+                time_file_check = os.path.isfile(self.time_data_file)
+                traj_file_check = os.path.isfile(self.traj_data_file)
+
+                if time_file_check == False and traj_file_check == False:
+                    break
+                else:
+                    interval += 1
+
+            print(f"Execution Time Data Path: {self.time_data_file_name}")
+            print(f"Trajectoy Data Path: {self.time_data_file_name}")
+           
+            self.time_data = open(self.time_data_file, "w", newline="")
+
+            self.time_data_writer = csv.writer(self.time_data)
+            self.time_data_writer.writerow(["index","time","exe_time"])
+
+            self.trajectory = open(self.traj_data_file,'w')
+
+        else:
+            pass
+
     def update_race_info(self,race_info):
         """
         header: 
@@ -386,7 +414,7 @@ class ODGPF:
             set_speed = self.current_speed - np.fabs((maximum_speed - self.current_speed) * 0.2)
 
 
-        return set_speed
+        return 3.0
 
     def main_drive(self, goal):
 
@@ -400,7 +428,7 @@ class ODGPF:
         # LOOK : 0.5 + (0.3 * _vel)   (장애물 or 곡선 part) == 2
         # LOOK이 path_radius에 끼치는 영향
         # -> LOOK이 클수록 스티어링 앵글을 덜꺾음 
-        path_radius = self.LOOK**1.25 / (2 * np.sin(controlled_angle))
+        path_radius = self.LOOK**1.1 / (2 * np.sin(controlled_angle))
         steering_angle = np.arctan(self.ROBOT_LENGTH / path_radius)
         # print("input",controlled_angle,"output",steering_angle)
 
@@ -551,9 +579,11 @@ class ODGPF:
                 tn0: driving loop start Time
                 tn1: driving loop final Time
             """
-            self.time_data_writer.writerow([loop, tn1-tn, tn1-tn0])
-            if self.tr_flag:
+            
+            if self.logger_trigger:
+                self.time_data_writer.writerow([loop, tn1-tn, tn1-tn0])
                 self.trajectory_logging()
+                
             if i % 10 == 0:
                 # del self.s1[0]
                 # del self.s2[0]
@@ -606,7 +636,7 @@ class ODGPF:
         
             rate.sleep()
 
-        if self.tr_flag:
+        if self.logger_trigger:
             print(self.race_time, self.race_info.ego_collision)
 
             self.recording.write(f"race_time : {np.round(self.race_time,4),self.race_info.ego_collision}\n")

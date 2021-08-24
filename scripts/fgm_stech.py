@@ -5,6 +5,7 @@ import math
 import numpy as np
 import time
 import csv
+import os 
 
 from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
@@ -26,24 +27,20 @@ class FGM:
         self.RACECAR_LENGTH = rospy.get_param('robot_length', 0.325)
         self.SPEED_MAX = rospy.get_param('max_speed',7.0)
         self.SPEED_MIN = rospy.get_param('min_speed', 1.5)
-        self.RATE = rospy.get_param('rate', 100)
+        self.RATE = rospy.get_param('rate', 200)
         self.ROBOT_SCALE = rospy.get_param('robot_scale', 0.25)
         self.THRESHOLD = rospy.get_param('threshold', 3.0)
         self.GAP_SIZE = rospy.get_param('gap_size', 1)
         self.FILTER_SCALE = rospy.get_param('filter_scale', 1.1) 
         self.GAP_THETA_GAIN = rospy.get_param('gap_theta_gain', 20.0)
-        self.REF_THETA_GAIN = rospy.get_param('ref_theta_gain', 1.5)
+        self.REF_THETA_GAIN = rospy.get_param('ref_theta_gain', 1.0)
         self.PI = rospy.get_param('pi', 3.141592)
 
-        self.time_data_file_name = "fgm_stech_time_data"
-        self.time_data_path = rospy.get_param("time_data_path")
-        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")
-        self.time_data_writer = csv.writer(self.time_data)
-        self.time_data_writer.writerow("index","time","exe_time")
+        self.logging_dic_path = rospy.get_param("data_path")
         
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
-        self.trj_path = rospy.get_param('trj_path','../f1tenth_ws/src/local_planning_gnu/utill/trajectory.csv')
+
         
         self.ackermann_data.drive.acceleration = 0
         self.ackermann_data.drive.jerk = 0
@@ -94,13 +91,50 @@ class FGM:
 
         self.recording = open('/home/lab/f1tenth_ws/src/local_planning_gnu/utill/recording.csv', 'a')
 
-        self.tr_flag = rospy.get_param('logging',False)
+        self.logger_trigger = rospy.get_param('logging', False)
+        self.logger_init()
+
         self.logging_idx = 0
         self.race_time = 0
         self.t_start = 0
 
-        if self.tr_flag:
-            self.trajectory = open(self.trj_path,'w')
+            
+    def logger_init(self):
+        if self.logger_trigger:
+            
+            interval = 0
+
+            time_name = "GRP_TIME_DATA"
+            trajectory_name = "GRP_TRAJECTORY_DATA"
+
+            while True:
+                self.time_data_file_name = f"{time_name}_{interval}.csv"
+                self.traj_data_file_name = f"{trajectory_name}_{interval}.csv"
+
+                self.time_data_file = f"{self.logging_dic_path}/{self.time_data_file_name}"
+                self.traj_data_file = f"{self.logging_dic_path}/{self.traj_data_file_name}"
+
+                time_file_check = os.path.isfile(self.time_data_file)
+                traj_file_check = os.path.isfile(self.traj_data_file)
+
+                if time_file_check == False and traj_file_check == False:
+                    break
+                else:
+                    interval += 1
+
+            print(f"Execution Time Data Path: {self.time_data_file_name}")
+            print(f"Trajectoy Data Path: {self.time_data_file_name}")
+           
+            self.time_data = open(self.time_data_file, "w", newline="")
+
+            self.time_data_writer = csv.writer(self.time_data)
+            self.time_data_writer.writerow(["index","time","exe_time"])
+
+            self.trajectory = open(self.traj_data_file,'w')
+
+        else:
+            pass
+
     
 
     def update_race_info(self,race_info):
@@ -313,9 +347,9 @@ class FGM:
     def find_gap(self, scan):
         self.gaps = []
         
-        i = 0
+        i = 200
 
-        while i < self.scan_range - self.GAP_SIZE:
+        while i < 880 - self.GAP_SIZE:
 
             if scan[i] > self.THRESHOLD:
                 start_idx_temp = i
@@ -323,7 +357,7 @@ class FGM:
                 max_temp = scan[i]
                 max_idx_temp = i
                 
-                while ((scan[i] > self.THRESHOLD) and (i+1 < self.scan_range )):
+                while ((scan[i] > self.THRESHOLD) and (i+1 < 880 )):
                     i += 1
                     if scan[i] > max_temp:
                         max_temp = scan[i]
@@ -331,11 +365,12 @@ class FGM:
                 if scan[i] > self.THRESHOLD:
                     i += 1
                 end_idx_temp = i
+                gap_center = (int)((end_idx_temp - start_idx_temp)/2) + start_idx_temp 
 
                 gap_temp = [0]*3
                 gap_temp[0] = start_idx_temp
                 gap_temp[1] = end_idx_temp
-                gap_temp[2] = max_idx_temp
+                gap_temp[2] = gap_center #max_idx_temp
                 self.gaps.append(gap_temp)
             i += 1
 
@@ -356,10 +391,14 @@ class FGM:
                 max_temp = scan[i]
                 max_idx_temp = i
         #[0] = start_idx, [1] = end_idx, [2] = max_idx_temp
+        # self.for_gap[0] = start_idx_temp
+        # self.for_gap[1] = end_idx_temp
+        # self.for_gap[2] = max_idx_temp
+
+        gap_center = (int)((end_idx_temp - start_idx_temp)/2) + start_idx_temp 
         self.for_gap[0] = start_idx_temp
         self.for_gap[1] = end_idx_temp
-        self.for_gap[2] = max_idx_temp
-
+        self.for_gap[2] = gap_center#max_idx_temp
 
     #ref - [0] = r, [1] = theta
     def find_best_gap(self, ref):
@@ -490,15 +529,15 @@ class FGM:
                 tn0: driving loop start Time
                 tn1: driving loop final Time
             """
-            self.time_data_writer.writerow([loop, tn1-tn, tn1-tn0])
 
-            if self.tr_flag:
+            if self.logger_trigger:
+                self.time_data_writer.writerow([loop, tn1-tn, tn1-tn0])
                 self.trajectory_logging()
 
             rate.sleep()
         
-        if self.tr_flag:
-            print(self.race_time)
+        if self.logger_trigger:
+            print(self.race_time, self.race_info.ego_collision)
             self.recording.write(f"race_time : {np.round(self.race_time,4),self.race_info.ego_collision}\n")
             self.trajectory.close()
 

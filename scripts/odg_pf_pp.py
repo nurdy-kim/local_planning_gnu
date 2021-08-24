@@ -11,6 +11,7 @@ from queue import Queue
 import math
 import time
 import csv
+import os
 #from multiprocessing import Process, Queue
 
 from sensor_msgs.msg import LaserScan
@@ -23,7 +24,7 @@ class maindrive(threading.Thread):
     def __init__(self, main_q):
         super(maindrive, self).__init__()
         self.main_q = main_q
-        self.RATE = 100
+        self.RATE = rospy.get_param('rate', 300)
         self.ackermann_data = AckermannDriveStamped()
         self.drive_topic = rospy.get_param("drive_topic", "/drive")
         self.drive_pub = rospy.Publisher(self.drive_topic, AckermannDriveStamped, queue_size=10)
@@ -61,8 +62,6 @@ class global_pure(threading.Thread):
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
 
-        self.trj_path = rospy.get_param("trj_path", "")
-        self.time_data_path = rospy.get_param("time_data_path", "")
 
         self.LOOKAHEAD_MAX = rospy.get_param('max_look_ahead', 1.9)
         self.LOOKAHEAD_MIN = rospy.get_param('min_look_ahead', 0.9)
@@ -126,7 +125,9 @@ class global_pure(threading.Thread):
             #     self.main_q.get()
             self.main_q.put(ackermann)
             self.tn2 = time.time()
-            self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1), "gp"])
+
+            if self.time_data_writer:
+                self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1), "gp"])
             # print("global")
             rate.sleep()
     
@@ -201,7 +202,7 @@ class local_fgm(threading.Thread):
         self.GRAVITY_ACC = rospy.get_param('g', 9.81)
         self.SPEED_MAX = rospy.get_param('max_speed', 7.0)
         self.SPEED_MIN = rospy.get_param('min_speed', 1.5)
-        self.RATE = rospy.get_param('rate', 100)
+        self.RATE = rospy.get_param('rate', 300)
         self.ROBOT_SCALE = rospy.get_param('robot_scale', 0.25)
         self.ROBOT_LENGTH = rospy.get_param('robot_length', 0.325)
         self.LOOK = 5
@@ -311,7 +312,8 @@ class local_fgm(threading.Thread):
             self.main_q.put(ackermann)
             
             self.tn2 = time.time()
-            self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1), "lp"])
+            if self.time_data_writer:
+                self.time_data_writer.writerow([self.t_loop, (self.tn2 - self.tn0), (self.tn2 - self.tn1), "lp"])
             
             # print("local")
 
@@ -518,14 +520,10 @@ class Obstacle_detect(threading.Thread):
         self.scan_topic = rospy.get_param("scan_topic", "/scan")
         self.marker_topic = rospy.get_param("marker_topic", "/marker")
 
-        self.time_data_file_name = "odg_pf_pp_time_data"
-        self.time_data_path = rospy.get_param("time_data_path")
-        self.time_data = open(f"{self.time_data_path}/{self.time_data_file_name}.csv", "w", newline="")             
-        self.time_data_writer = csv.writer(self.time_data)
-        self.time_data_writer.writerow("index","time","exe_time")
-
         self.waypoint_real_path = rospy.get_param('wpt_path', '../f1tenth_ws/src/car_duri/wp_vegas_test.csv')
         self.waypoint_delimeter = rospy.get_param('wpt_delimeter', ',')
+
+        self.logging_dic_path = rospy.get_param("data_path")
 
         self.interval = 0.00435
         self.scan_range = 0
@@ -542,7 +540,7 @@ class Obstacle_detect(threading.Thread):
         self.FILTER_SCALE = rospy.get_param('filter_scale', 1.1) 
     
         self.PI = rospy.get_param('pi', 3.141592)
-        self.RATE = rospy.get_param('rate', 100)
+        self.RATE = rospy.get_param('rate', 300)
 
         self.current_position = [0]*5
         self.lidar_data = [0]*3
@@ -563,8 +561,8 @@ class Obstacle_detect(threading.Thread):
 
          # FOR TRAJECTORY LOGGING
         rospy.Subscriber("/race_info",RaceInfo,self.update_race_info,queue_size=10)
-        self.tr_flag = rospy.get_param('logging',False)
-        trj_path = rospy.get_param('trj_path')
+        self.logger_trigger = rospy.get_param('logging', False)
+        self.logger_init()
         
         self.race_info = None
         self.lap = 0
@@ -573,8 +571,42 @@ class Obstacle_detect(threading.Thread):
         self.race_time = 0
         self.t_start = 0
 
-        if self.tr_flag:
-            self.trajectory = open(trj_path,'w')
+    def logger_init(self):
+        if self.logger_trigger:
+            
+            interval = 0
+
+            time_name = "ODGPFPP_TIME_DATA"
+            trajectory_name = "ODGPFPP_TRAJECTORY_DATA"
+
+            while True:
+                self.time_data_file_name = f"{time_name}_{interval}.csv"
+                self.traj_data_file_name = f"{trajectory_name}_{interval}.csv"
+
+                self.time_data_file = f"{self.logging_dic_path}/{self.time_data_file_name}"
+                self.traj_data_file = f"{self.logging_dic_path}/{self.traj_data_file_name}"
+
+                time_file_check = os.path.isfile(self.time_data_file)
+                traj_file_check = os.path.isfile(self.traj_data_file)
+
+                if time_file_check == False and traj_file_check == False:
+                    break
+                else:
+                    interval += 1
+
+            print(f"Execution Time Data Path: {self.time_data_file_name}")
+            print(f"Trajectoy Data Path: {self.time_data_file_name}")
+           
+            self.time_data = open(self.time_data_file, "w", newline="")
+
+            self.time_data_writer = csv.writer(self.time_data)
+            self.time_data_writer.writerow(["index","time","exe_time"])
+
+            self.trajectory = open(self.traj_data_file,'w')
+
+        else:
+            self.time_data_writer = None
+
     
     def update_race_info(self,race_info):
 
@@ -828,17 +860,12 @@ class Obstacle_detect(threading.Thread):
                 break
     
     def trajectory_logging(self):
-        self.race_time = time.time() - self.t_start
-        if self.logging_idx <= self.wp_index_current:
-            self.trajectory.write(f"{self.race_time},")
-            self.trajectory.write(f"{self.current_position[0]},")
-            self.trajectory.write(f"{self.current_position[1]},")
-            self.trajectory.write(f"{self.current_position[2]},")
-            self.trajectory.write(f"{self.current_speed}\n")
-            
-            self.logging_idx += 1
-        else:
-            pass
+        _race_time = self.race_time
+        self.trajectory.write(f"{_race_time},")
+        self.trajectory.write(f"{self.current_position[0]},")
+        self.trajectory.write(f"{self.current_position[1]},")
+        self.trajectory.write(f"{self.current_position[2]},")
+        self.trajectory.write(f"{self.current_speed}\n")
                 
     def run(self):
         self.t_start = time.time()
@@ -852,7 +879,7 @@ class Obstacle_detect(threading.Thread):
             t1 = time.time()
             
             self.obs_dect()
-            if self.tr_flag:
+            if self.logger_trigger:
                 self.trajectory_logging()
 
             self.find_nearest_wp()
@@ -873,9 +900,10 @@ class Obstacle_detect(threading.Thread):
                 if self.global_od_q.full():
                     self.global_od_q.get()
                 self.global_od_q.put(sensor_data)
+            print(self.race_time)
             rate.sleep()
         
-        if self.tr_flag:
+        if self.logger_trigger:
             print(self.race_time)
             self.trajectory.close()
 
