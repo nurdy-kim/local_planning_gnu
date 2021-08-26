@@ -390,36 +390,51 @@ class ODGPF:
         return min_f_idx
     
     def speed_controller(self,steering_angle):
-        current_distance = np.max(self.scan_filtered)
+        current_distance = np.fabs(np.max(self.scan_filtered))
+
         if np.isnan(current_distance):
             print("SCAN ERR")
             current_distance = 1.0
-        
-        if self.current_speed > 10:
-            current_distance = self.current_speed * 0.7
-        
-        maximum_speed = np.sqrt(2*self.MU * self.GRAVITY_ACC * np.fabs(current_distance)) - 2
-        
-        if maximum_speed >= self.SPEED_MAX:
-            maximum_speed = self.SPEED_MAX
 
-        if (np.fabs(steering_angle) > self.PI/8):
-            maximum_speed = maximum_speed
-        else:
-            maximum_speed = (float)(-(3/self.PI)*maximum_speed*np.fabs(self.steering_angle)+maximum_speed)
+        if self.current_speed > 10:
+            current_distance -= self.current_speed * 0.7
+
+        v_braking = np.sqrt(2*self.MU*self.GRAVITY_ACC*np.fabs(current_distance)) - 2
         
+        if np.fabs(steering_angle) > self.PI/8:
+            maximum_speed = v_braking
+        else:
+            maximum_speed = (float)(-(3/self.PI)*(v_braking-self.current_speed)*np.fabs(self.steering_angle)+v_braking)
+            maximum_speed = np.fabs(maximum_speed)
+        print(maximum_speed)
         if self.current_speed <= maximum_speed:
-            # ACC
             if self.current_speed >= 10:
-                set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed))
+                set_speed = maximum_speed
             else:
                 set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * self.ROBOT_LENGTH)
         else:
-            # set_speed = 0
-            set_speed = self.current_speed - np.fabs((maximum_speed - self.current_speed) * 0.2)
-
-
+            set_speed = set_speed = self.current_speed - np.fabs((maximum_speed - self.current_speed) * self.ROBOT_LENGTH)
+        
         return set_speed
+        # braking_distance = np.sqrt(2*self.MU * self.GRAVITY_ACC * np.fabs(current_distance)) - 2
+        
+        # if maximum_speed >= self.SPEED_MAX:
+        #     maximum_speed = self.SPEED_MAX
+
+        # if (np.fabs(steering_angle) > self.PI/8):
+        #     maximum_speed = maximum_speed
+        # else:
+        #     maximum_speed = (float)(-(3/self.PI)*(maximum_speed - self.current_speed)*np.fabs(self.steering_angle)+self.current_speed)
+        
+        # if self.current_speed <= maximum_speed:
+        #     # ACC
+        #     if self.current_speed >= 10:
+        #         set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed))
+        #     else:
+        #         set_speed = self.current_speed + np.fabs((maximum_speed - self.current_speed) * self.ROBOT_LENGTH)
+        # else:
+        #     # set_speed = 0
+        #     set_speed = self.current_speed - np.fabs((maximum_speed - self.current_speed) * 0.2)
 
     def main_drive(self, goal):
 
