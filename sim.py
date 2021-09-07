@@ -7,6 +7,7 @@ from argparse import Namespace
 from planner.fgm_stech import FGM as FGM_STECH
 from planner.fgm_gnu import FGM as FGM_GNU
 from planner.odg_pf import ODGPF
+from planner.odg_gnu import ODGGNU
 
 if __name__ == '__main__':
 
@@ -21,7 +22,8 @@ if __name__ == '__main__':
 
     # planner = FGM_GNU(conf)
     # planner = FGM_STECH(conf)
-    planner = ODGPF(conf)
+    # planner = ODGPF(conf)
+    planner = ODGGNU(conf)
 
     laptime = 0.0
     start = time.time()
