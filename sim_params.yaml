@@ -4,11 +4,11 @@ sx: 0
 sy: 0
 stheta: 0
 
-map_path: "map/obs1_map"
+map_path: "map/vegas_test"
 map_ext: '.png'
 
 # Planner Constants
-wpt_path: 'map/wp_obsmap1.csv'
+wpt_path: 'map/wp_vegas.csv'
 wpt_delimeter: ','
 
 max_speed: 7.0
