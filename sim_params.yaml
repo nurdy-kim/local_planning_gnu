@@ -8,11 +8,11 @@ map_path: "map/vegas_test"
 map_ext: '.png'
 
 # Planner Constants
-wpt_path: 'map/wp_vegas.csv'
+wpt_path: 'map/wp_vegas_test.csv'
 wpt_delimeter: ','
 
-max_speed: 7.0
-min_speed: 01.5
+max_speed: 8.0
+min_speed: 5.0
 
 robot_length: 0.3302
 robot_scale: 0.2032
